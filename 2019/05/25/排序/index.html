@@ -12,12 +12,10 @@
         <meta name="keywords" content="算法,排序">
     
     
-        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
-    
     
         <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"常见的七种排序算法\n冒泡排序原理属于交换排序，两两比较交换，遍历一遍即确定最大数\n程序1234567891011public void bubbleSort(int[] arrays)&#123;    for(int i=0; i&lt;arrays.length-1; i++)&#123;        for(int j=0; j&lt;arrays.length-1-i; j++)&#123;            if(arrays[j] &gt; arrays[j+1])&#123;                int tmp = arrays[j];                arrays[j] = arrays[j+1];                arrays[j+1] = tmp;            &#125;        &#125;    &#125;&#125;\n优化思路：如果一趟排序没有位置交换，即数组已经有序。\n123456789101112131415public void bubbleSort(int[] arrays)&#123;    for(int i=0; i&lt;arrays.length-1; i++)&#123;        int isChange = 0;        for(int j=0; j&lt;arrays.length-1-i; j++)&#123;            if(arrays[j] &gt; arrays[j+1])&#123;                int tmp = arrays[j];                arrays[j] = arrays[j+1];                arrays[j+1] = tmp;                isChange = 1;            &#125;        &#125;        if(isChange == 0)            break;    &#125;&#125;\n复杂度时间：O(N^2)\n是否稳定：稳定\n空间：O(1)\n选择排序原理每次遍历从数组中找出最小值放到最左边\n程序12345678910111213141516public void selectSort(int[] arrays)&#123;    int n = arrays.length;    int minIndex;    for(int i=0; i&lt;n; i++)&#123;        minIndex = i;        for(int j=i+1; j&lt;n; j++)&#123;            if(arrays[j] &lt; arrays[minIndex])                minIndex = j;        &#125;        if(minIndex != i)&#123;            int tmp = arrays[i];            arrays[i] = arrays[minIndex];            arrays[minIndex] = tmp;        &#125;    &#125;&#125;\n复杂度时间：O(N^2)\n是否稳定：不稳定（相同的数有可能前者会与后面更小的数交换了位置）\n空间：O(1)\n直接插入排序原理把数组分成有序和无序，每次从无序中取出一个放入有序队列\n程序12345678910public void insertSort(int[] arrays)&#123;    int n = arrays.length;    for(int i=1; i&lt;n; i++)&#123;        for(int j=i; j&gt;0&amp;&amp;(arrays[j]&lt;arrays[j-1]); j--)&#123;            int tmp = arrays[j];            arrays[j] = arrays[j-1];            arrays[j-1] = tmp;        &#125;    &#125;&#125;\n复杂度时间：O(N^2)\n是否稳定：稳定\n空间：O(1)\n希尔排序原理对间隔h的数进行排序，不断减小h，最后h=1即数组有序。\n程序1234567891011121314151617public void shellSort(int[] arrays)&#123;    int n = arrays.length;    int h = 1;    while(h&lt;n/3)&#123;        h=3*h+1; //1,4,13,40...    &#125;    while(h&gt;=1)&#123;        for(int i=1; i&lt;n; i++)&#123;        \tfor(int j=i; j&gt;0&amp;&amp;(arrays[j]&lt;arrays[j-1]); j--)&#123;            \tint tmp = arrays[j];            \tarrays[j] = arrays[j-1];            \tarrays[j-1] = tmp;        \t&#125;    \t&#125;        h = h/3;    &#125;&#125;\n复杂度时间：O(N^(3/2))\n是否稳定：不稳定\n空间：O(1)\n快速排序原理交换排序基于递归，从数组左边选择一个数作为基准值，比基准值小的放前面，比基准值大的放后面。\n程序12345678910111213141516171819202122public void sort(int[] arrays)&#123;    int left = 0;\tint right = arrays.length-1;    qiuckSort(arrays, left, right);&#125;public void qiuckSort(int[] a, int l, int r)&#123;    if(l&gt;=r) return ;    int mid = l;//基准值    int start = l+1, end = r;    while(start&lt;end)&#123;        while(a[end]&gt;=a[mid] &amp;&amp; start&lt;end)            end--;        while(a[start]&lt;=a[mid] &amp;&amp; start&lt;end)            start++;        if(start&lt;end)            swap(a[start], a[end]);    &#125;    swap(a[l], a[start]);    quickSort(a, l, end-1);    quickSort(a, end+1, r);&#125;\n优化三向切分，把数组切分成小于、等于、大于。对于有大量重复元素的数组可以更高效。\n12345678910111213141516171819202122232425public void sort(int[] arrays)&#123;    int left = 0;\tint right = arrays.length-1;    qiuckSort(arrays, left, right);&#125;public void qiuckSort(int[] a, int l, int r)&#123;    if(l&gt;=r) return ;    int mid = l;//每次使用的比较值    int start = l+1, end = r;    while(start&lt;=end)&#123;        int cmp = a[start] - a[mid];        if(cmp&lt;0)&#123;//右边比比较值小            swap(a[mid++], a[start++]);//交换位置，比较值位置等于前移一位        &#125;        else if(cmp&gt;0)&#123;//右边比比较值大            swap(a[start], a[end--]);//把大的放到最后，下次大的放在倒数第二        &#125;        else&#123;            start++;        &#125;    &#125;    quickSort(a, l, mid-1);    quickSort(a, end+1, r);&#125;\n复杂度时间：O(N^lgN)\n是否稳定：不稳定\n空间：O(NlgN)\n归并排序原理将数组拆分成两部分，分别排序然后归并。自顶向下即将一个大数组分成两个小数组。\n程序12345678910111213141516171819202122232425262728public void mergeSortUpDown(int[] a, int start, int end)&#123;    if(a==null || start&gt;=end)        return ;    int mid = (end+start)/2;    mergeSortUpDown(a, start, mid);    mergeSortUpDown(a, mid+1, end);    merge(a, start, mid, end);&#125;//将两个相邻的有序区间合并成一个public void merge(int[] a, int start, int mid, int end)&#123;    int[] tmp = new int[end-start+1];    int i = start;    int j = mid+1;    for(int k=start; k&lt;=end; k++)&#123;        tmp[k] = a[k];// 将数据复制到辅助数组    &#125;    for(int k=start; k&lt;=end; k++)&#123;        if(i &gt; mid)&#123;左边没有数存右边            a[k] = tmp[j++];        &#125;else if(j &gt; end)&#123;//右边没有数，存左边            a[k] = tmp[i++];        &#125;else if(tmp[i] - tmp[j] &lt;= 0)&#123;//合并数组中左边较小，存            a[k] = tmp[i++];        &#125;else&#123;//合并数组右边较小，存            a[k] = tmp[j++];        &#125;    &#125;&#125;\n复杂度时间：O(NlgN)\n是否稳定：稳定\n空间：O(NlgN)\n堆排序原理用数组模拟二叉树的数据结构存储数据，每次把最大值放在堆顶，然后交换数据把最大值放到末尾，循环既可。\n其中：当数组第0个位置没有元素时，索引为i的数，左孩子是2i，右孩子是2i+1，父节点是i/2\n程序123456789101112131415161718192021222324public void heapSort(int[] a)&#123;    /**     * 数组第 0 个位置不能有元素     */    int n = a.length - 1;    //构建堆，从倒数第二层开始下沉即可    for(int k=n/2; k &gt;= 1; k--)        sink(a, k, n);    while(n &gt; 1)&#123;        swap(a, 1, n--);//最大值放到最后        sink(a, 1, n);//新的下沉        &#125;&#125;public void sink(int[] a, int k, int n)&#123;//k节点下沉到合适位置    while(2 * k &lt;= n)&#123;//非叶子层        int j = 2 * k;//左孩子        if(j &lt; n &amp;&amp; (a[j] - a[j+1] &lt; 0))//选出两个孩子中大的一个            j++;        if(a[k] - a[j] &gt; 0)//父与子中大的对比            break;        swap(a, k, j);        k = j;    &#125;&#125;\n复杂度时间：O(NlgN)\n是否稳定：不稳定\n空间：O(1)\n现代操作系统很少使用堆排序，因为它无法利用局部性原理进行缓存，也就是数组元素很少和相邻的元素进行比较和交换。\n总结\n\n\n算法\n稳定性\n时间复杂度\n空间复杂度\n备注\n\n\n\n\n选择排序\n×\nN2\n1\n\n\n\n冒泡排序\n√\nN2\n1\n\n\n\n插入排序\n√\nN ~ N2\n1\n时间复杂度和初始顺序有关\n\n\n希尔排序\n×\nN 的若干倍乘于递增序列的长度\n1\n改进版插入排序\n\n\n快速排序\n×\nNlogN\nlogN\n\n\n\n三向切分快速排序\n×\nN ~ NlogN\nlogN\n适用于有大量重复主键\n\n\n归并排序\n√\nNlogN\nN\n\n\n\n堆排序\n×\nNlogN\n1\n无法利用局部性原理\n\n\n\n快速排序是最快的通用排序算法，它的内循环的指令很少，而且它还能利用缓存，因为它总是顺序地访问数据。它的运行时间近似为 ~cNlogN，这里的 c 比其它线性对数级别的排序算法都要小。\nJava 主要排序方法为 java.util.Arrays.sort()，对于原始数据类型使用三向切分的快速排序，对于引用类型使用归并排序。\n","dateCreated":"2019-05-25T15:59:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-25T15:59:00+08:00","description":"常见的七种排序算法","headline":"排序算法","image":["https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg","https://s2.ax1x.com/2019/05/25/Vk5tu6.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/25/排序/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/25/排序/","keywords":"排序","thumbnailUrl":"https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/","http://stackoverflow.com/users","https://twitter.com/","https://facebook.com/","https://plus.google.com/","https://www.linkedin.com/profile/","mailto"]},"articleBody":"常见的七种排序算法\n冒泡排序原理属于交换排序，两两比较交换，遍历一遍即确定最大数\n程序1234567891011public void bubbleSort(int[] arrays)&#123;    for(int i=0; i&lt;arrays.length-1; i++)&#123;        for(int j=0; j&lt;arrays.length-1-i; j++)&#123;            if(arrays[j] &gt; arrays[j+1])&#123;                int tmp = arrays[j];                arrays[j] = arrays[j+1];                arrays[j+1] = tmp;            &#125;        &#125;    &#125;&#125;\n优化思路：如果一趟排序没有位置交换，即数组已经有序。\n123456789101112131415public void bubbleSort(int[] arrays)&#123;    for(int i=0; i&lt;arrays.length-1; i++)&#123;        int isChange = 0;        for(int j=0; j&lt;arrays.length-1-i; j++)&#123;            if(arrays[j] &gt; arrays[j+1])&#123;                int tmp = arrays[j];                arrays[j] = arrays[j+1];                arrays[j+1] = tmp;                isChange = 1;            &#125;        &#125;        if(isChange == 0)            break;    &#125;&#125;\n复杂度时间：O(N^2)\n是否稳定：稳定\n空间：O(1)\n选择排序原理每次遍历从数组中找出最小值放到最左边\n程序12345678910111213141516public void selectSort(int[] arrays)&#123;    int n = arrays.length;    int minIndex;    for(int i=0; i&lt;n; i++)&#123;        minIndex = i;        for(int j=i+1; j&lt;n; j++)&#123;            if(arrays[j] &lt; arrays[minIndex])                minIndex = j;        &#125;        if(minIndex != i)&#123;            int tmp = arrays[i];            arrays[i] = arrays[minIndex];            arrays[minIndex] = tmp;        &#125;    &#125;&#125;\n复杂度时间：O(N^2)\n是否稳定：不稳定（相同的数有可能前者会与后面更小的数交换了位置）\n空间：O(1)\n直接插入排序原理把数组分成有序和无序，每次从无序中取出一个放入有序队列\n程序12345678910public void insertSort(int[] arrays)&#123;    int n = arrays.length;    for(int i=1; i&lt;n; i++)&#123;        for(int j=i; j&gt;0&amp;&amp;(arrays[j]&lt;arrays[j-1]); j--)&#123;            int tmp = arrays[j];            arrays[j] = arrays[j-1];            arrays[j-1] = tmp;        &#125;    &#125;&#125;\n复杂度时间：O(N^2)\n是否稳定：稳定\n空间：O(1)\n希尔排序原理对间隔h的数进行排序，不断减小h，最后h=1即数组有序。\n程序1234567891011121314151617public void shellSort(int[] arrays)&#123;    int n = arrays.length;    int h = 1;    while(h&lt;n/3)&#123;        h=3*h+1; //1,4,13,40...    &#125;    while(h&gt;=1)&#123;        for(int i=1; i&lt;n; i++)&#123;        \tfor(int j=i; j&gt;0&amp;&amp;(arrays[j]&lt;arrays[j-1]); j--)&#123;            \tint tmp = arrays[j];            \tarrays[j] = arrays[j-1];            \tarrays[j-1] = tmp;        \t&#125;    \t&#125;        h = h/3;    &#125;&#125;\n复杂度时间：O(N^(3/2))\n是否稳定：不稳定\n空间：O(1)\n快速排序原理交换排序基于递归，从数组左边选择一个数作为基准值，比基准值小的放前面，比基准值大的放后面。\n程序12345678910111213141516171819202122public void sort(int[] arrays)&#123;    int left = 0;\tint right = arrays.length-1;    qiuckSort(arrays, left, right);&#125;public void qiuckSort(int[] a, int l, int r)&#123;    if(l&gt;=r) return ;    int mid = l;//基准值    int start = l+1, end = r;    while(start&lt;end)&#123;        while(a[end]&gt;=a[mid] &amp;&amp; start&lt;end)            end--;        while(a[start]&lt;=a[mid] &amp;&amp; start&lt;end)            start++;        if(start&lt;end)            swap(a[start], a[end]);    &#125;    swap(a[l], a[start]);    quickSort(a, l, end-1);    quickSort(a, end+1, r);&#125;\n优化三向切分，把数组切分成小于、等于、大于。对于有大量重复元素的数组可以更高效。\n12345678910111213141516171819202122232425public void sort(int[] arrays)&#123;    int left = 0;\tint right = arrays.length-1;    qiuckSort(arrays, left, right);&#125;public void qiuckSort(int[] a, int l, int r)&#123;    if(l&gt;=r) return ;    int mid = l;//每次使用的比较值    int start = l+1, end = r;    while(start&lt;=end)&#123;        int cmp = a[start] - a[mid];        if(cmp&lt;0)&#123;//右边比比较值小            swap(a[mid++], a[start++]);//交换位置，比较值位置等于前移一位        &#125;        else if(cmp&gt;0)&#123;//右边比比较值大            swap(a[start], a[end--]);//把大的放到最后，下次大的放在倒数第二        &#125;        else&#123;            start++;        &#125;    &#125;    quickSort(a, l, mid-1);    quickSort(a, end+1, r);&#125;\n复杂度时间：O(N^lgN)\n是否稳定：不稳定\n空间：O(NlgN)\n归并排序原理将数组拆分成两部分，分别排序然后归并。自顶向下即将一个大数组分成两个小数组。\n程序12345678910111213141516171819202122232425262728public void mergeSortUpDown(int[] a, int start, int end)&#123;    if(a==null || start&gt;=end)        return ;    int mid = (end+start)/2;    mergeSortUpDown(a, start, mid);    mergeSortUpDown(a, mid+1, end);    merge(a, start, mid, end);&#125;//将两个相邻的有序区间合并成一个public void merge(int[] a, int start, int mid, int end)&#123;    int[] tmp = new int[end-start+1];    int i = start;    int j = mid+1;    for(int k=start; k&lt;=end; k++)&#123;        tmp[k] = a[k];// 将数据复制到辅助数组    &#125;    for(int k=start; k&lt;=end; k++)&#123;        if(i &gt; mid)&#123;左边没有数存右边            a[k] = tmp[j++];        &#125;else if(j &gt; end)&#123;//右边没有数，存左边            a[k] = tmp[i++];        &#125;else if(tmp[i] - tmp[j] &lt;= 0)&#123;//合并数组中左边较小，存            a[k] = tmp[i++];        &#125;else&#123;//合并数组右边较小，存            a[k] = tmp[j++];        &#125;    &#125;&#125;\n复杂度时间：O(NlgN)\n是否稳定：稳定\n空间：O(NlgN)\n堆排序原理用数组模拟二叉树的数据结构存储数据，每次把最大值放在堆顶，然后交换数据把最大值放到末尾，循环既可。\n其中：当数组第0个位置没有元素时，索引为i的数，左孩子是2i，右孩子是2i+1，父节点是i/2\n程序123456789101112131415161718192021222324public void heapSort(int[] a)&#123;    /**     * 数组第 0 个位置不能有元素     */    int n = a.length - 1;    //构建堆，从倒数第二层开始下沉即可    for(int k=n/2; k &gt;= 1; k--)        sink(a, k, n);    while(n &gt; 1)&#123;        swap(a, 1, n--);//最大值放到最后        sink(a, 1, n);//新的下沉        &#125;&#125;public void sink(int[] a, int k, int n)&#123;//k节点下沉到合适位置    while(2 * k &lt;= n)&#123;//非叶子层        int j = 2 * k;//左孩子        if(j &lt; n &amp;&amp; (a[j] - a[j+1] &lt; 0))//选出两个孩子中大的一个            j++;        if(a[k] - a[j] &gt; 0)//父与子中大的对比            break;        swap(a, k, j);        k = j;    &#125;&#125;\n复杂度时间：O(NlgN)\n是否稳定：不稳定\n空间：O(1)\n现代操作系统很少使用堆排序，因为它无法利用局部性原理进行缓存，也就是数组元素很少和相邻的元素进行比较和交换。\n总结\n\n\n算法\n稳定性\n时间复杂度\n空间复杂度\n备注\n\n\n\n\n选择排序\n×\nN2\n1\n\n\n\n冒泡排序\n√\nN2\n1\n\n\n\n插入排序\n√\nN ~ N2\n1\n时间复杂度和初始顺序有关\n\n\n希尔排序\n×\nN 的若干倍乘于递增序列的长度\n1\n改进版插入排序\n\n\n快速排序\n×\nNlogN\nlogN\n\n\n\n三向切分快速排序\n×\nN ~ NlogN\nlogN\n适用于有大量重复主键\n\n\n归并排序\n√\nNlogN\nN\n\n\n\n堆排序\n×\nNlogN\n1\n无法利用局部性原理\n\n\n\n快速排序是最快的通用排序算法，它的内循环的指令很少，而且它还能利用缓存，因为它总是顺序地访问数据。它的运行时间近似为 ~cNlogN，这里的 c 比其它线性对数级别的排序算法都要小。\nJava 主要排序方法为 java.util.Arrays.sort()，对于原始数据类型使用三向切分的快速排序，对于引用类型使用归并排序。\n","dateCreated":"2019-05-25T15:59:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-25T15:59:00+08:00","description":"常见的七种排序算法","headline":"排序算法","image":["https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg","https://s2.ax1x.com/2019/05/25/Vk5tu6.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/25/排序/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/","http://stackoverflow.com/users","https://twitter.com/","https://facebook.com/","https://plus.google.com/","https://www.linkedin.com/profile/","mailto"]},"url":"/2019/05/25/排序/","keywords":"排序","thumbnailUrl":"https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg"}</script>
     <meta name="description" content="常见的七种排序算法">
 <meta name="keywords" content="算法,排序">
 <meta property="og:type" content="blog">
@@ -35,22 +33,24 @@
         
     
     
-        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
-    
     
         <meta property="og:image" content="https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg"/>
-        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg" />
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/25/Vk5XaF.md.jpg"/>
     
     
         <meta property="og:image" content="https://s2.ax1x.com/2019/05/25/Vk5tu6.jpg"/>
-        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/25/Vk5tu6.jpg" />
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/25/Vk5tu6.jpg"/>
     
     
     <!--STYLES-->
-    <link rel="stylesheet" href="/assets/css/style-c4ozcsklz4kht2pebhp44xorvyverh23toayhn7i6ubrpyedak24hv1v0hyd.min.css">
+    <link rel="stylesheet" href="/assets/css/style-inw8pl0vcsjxbkjilkyx1wcvyzpyb5lstkp9pk3qndyvskleosndshovid8c.min.css">
     <!--STYLES END-->
     
 
+    
+
+    
+        
     
 </head>
 
@@ -60,22 +60,18 @@
 
 
     
-        
-            
-        
-    
 
 <header id="header" data-behavior="4">
     <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
     <div class="header-title">
-        <a class="header-title-link" href="/ ">莱茵河畔的固执</a>
+        <a class="header-title-link" href="/ " aria-label>
+            莱茵河畔的固执
+        </a>
     </div>
     
         
-            <a class="header-right-picture " href="#about">
+            <a class="header-right-picture " href="#about" aria-label="打开链接: /#about">
         
-        
-            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
         
         </a>
     
@@ -84,23 +80,8 @@
             <!-- Define author's picture -->
 
 
-
-        
-    
-
 <nav id="sidebar" data-behavior="4">
     <div class="sidebar-container">
-        
-            <div class="sidebar-profile">
-                <a href="/#about">
-                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
-                </a>
-                <h4 class="sidebar-profile-name">BillReus</h4>
-                
-                    <h5 class="sidebar-profile-bio"><p>多特蒙德死忠</p>
-</h5>
-                
-            </div>
         
         
             <ul class="sidebar-buttons">
@@ -141,13 +122,31 @@
                     </a>
             </li>
             
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                    
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜索</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="#about" title="关于">
+                    
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
         </ul>
         
             <ul class="sidebar-buttons">
             
                 <li class="sidebar-button">
                     
-                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                        <a class="sidebar-button-link " href="https://github.com/" title="GitHub">
                     
                         <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
                         <span class="sidebar-button-desc">GitHub</span>
@@ -156,19 +155,68 @@
             
                 <li class="sidebar-button">
                     
-                        <a class="sidebar-button-link " href="#about" title="关于">
+                        <a class="sidebar-button-link " href="http://stackoverflow.com/users" title="Stack Overflow">
                     
-                        <i class="sidebar-button-icon fa fa-user" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">关于</span>
+                        <i class="sidebar-button-icon fab fa-stack-overflow" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Stack Overflow</span>
                     </a>
             </li>
             
                 <li class="sidebar-button">
                     
-                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                        <a class="sidebar-button-link " href="https://twitter.com/" title="Twitter">
                     
-                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">搜索</span>
+                        <i class="sidebar-button-icon fab fa-twitter" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Twitter</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://facebook.com/" title="Facebook">
+                    
+                        <i class="sidebar-button-icon fab fa-facebook" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Facebook</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://plus.google.com/" title="Google Plus">
+                    
+                        <i class="sidebar-button-icon fab fa-google-plus" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Google Plus</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://www.linkedin.com/profile/" title="LinkedIn">
+                    
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/mailto" title="邮箱">
+                    
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">邮箱</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/atom.xml" title="RSS">
+                    
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">RSS</span>
                     </a>
             </li>
             
@@ -338,6 +386,7 @@
 
             
 
+
         </div>
     </div>
     <div id="post-footer" class="post-footer main-content-wrap">
@@ -356,20 +405,20 @@
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/06/12/史诗/" data-tooltip="史诗" aria-label="上一篇: 史诗">
-                
-                    <i class="fa fa-angle-left" aria-hidden="true"></i>
-                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/06/12/史诗/" data-tooltip="史诗" aria-label="上一篇: 史诗">
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
             </li>
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/20/广场/" data-tooltip="广场" aria-label="下一篇: 广场">
-                
-                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
-                    <i class="fa fa-angle-right" aria-hidden="true"></i>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/20/广场/" data-tooltip="广场" aria-label="下一篇: 广场">
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
             </li>
         </ul>
     </nav>
@@ -383,16 +432,24 @@
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/25/排序/" title="分享到 Weibo">
-                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/25/排序/" title="分享到 Facebook" aria-label="分享到 Facebook">
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
                 </a>
             </li>
         
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/25/排序/&amp;title=排序算法" title="分享到 QQ">
-                    <i class="fab fa-qq" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/25/排序/" title="分享到 Twitter" aria-label="分享到 Twitter">
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=/2019/05/25/排序/" title="分享到 Google+" aria-label="分享到 Google+">
+                    <i class="fab fa-google-plus" aria-hidden="true"></i>
                 </a>
             </li>
         
@@ -434,20 +491,20 @@
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/06/12/史诗/" data-tooltip="史诗" aria-label="上一篇: 史诗">
-                
-                    <i class="fa fa-angle-left" aria-hidden="true"></i>
-                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/06/12/史诗/" data-tooltip="史诗" aria-label="上一篇: 史诗">
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
             </li>
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/20/广场/" data-tooltip="广场" aria-label="下一篇: 广场">
-                
-                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
-                    <i class="fa fa-angle-right" aria-hidden="true"></i>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/20/广场/" data-tooltip="广场" aria-label="下一篇: 广场">
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
             </li>
         </ul>
     </nav>
@@ -461,16 +518,24 @@
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/25/排序/" title="分享到 Weibo">
-                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/25/排序/" title="分享到 Facebook" aria-label="分享到 Facebook">
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
                 </a>
             </li>
         
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/25/排序/&amp;title=排序算法" title="分享到 QQ">
-                    <i class="fab fa-qq" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/25/排序/" title="分享到 Twitter" aria-label="分享到 Twitter">
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=/2019/05/25/排序/" title="分享到 Google+" aria-label="分享到 Google+">
+                    <i class="fab fa-google-plus" aria-hidden="true"></i>
                 </a>
             </li>
         
@@ -497,16 +562,24 @@
                 
                 
                 <li class="share-option">
-                    <a class="share-option-btn" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/25/排序/">
-                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/25/排序/" aria-label="分享到 Facebook">
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
                     </a>
                 </li>
             
                 
                 
                 <li class="share-option">
-                    <a class="share-option-btn" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/25/排序/&amp;title=排序算法">
-                        <i class="fab fa-qq" aria-hidden="true"></i><span>分享到 QQ</span>
+                    <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/25/排序/" aria-label="分享到 Twitter">
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=/2019/05/25/排序/" aria-label="分享到 Google+">
+                        <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google+</span>
                     </a>
                 </li>
             
@@ -519,49 +592,39 @@
         
 
 
-    
-        
-    
-
 <div id="about">
     <div id="about-card">
         <div id="about-btn-close">
             <i class="fa fa-times"></i>
         </div>
         
-            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
-        
             <h4 id="about-card-name">BillReus</h4>
         
-            <div id="about-card-bio"><p>多特蒙德死忠</p>
+            <div id="about-card-bio"><p>author.bio</p>
 </div>
         
         
             <div id="about-card-job">
                 <i class="fa fa-briefcase"></i>
                 <br>
-                <p>等Offer</p>
+                <p>author.job</p>
 
             </div>
         
-        
-            <div id="about-card-location">
-                <i class="fa fa-map-marker-alt"></i>
-                <br>
-                China
-            </div>
         
     </div>
 </div>
 
         
         
-<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
+<div id="cover" style="background-image:url('/assets/images/cover.jpg');"></div>
         <!--SCRIPTS-->
-<script src="/assets/js/script-dbd16rvloemmuxdzniplmnxxvwoz24eya9wol0b7vvmlokgqsjivmb8dnscy.min.js"></script>
+<script src="/assets/js/script-iupfu4cvozqvsi1hhazhbob6uip1kfivmhmcidsf0ja5ike2vagngtevm6j3.min.js"></script>
 <!--SCRIPTS END-->
 
+
     
+
 
 
 

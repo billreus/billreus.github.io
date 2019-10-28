@@ -12,12 +12,10 @@
         <meta name="keywords" content="设计模式,计算机基础,单例,工厂,代理">
     
     
-        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
-    
     
         <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理\n\n\n单例模式确保一个类只有一个实例，并提供该实例的全局访问\n构造方法私有静态变量+私有构造函数+公有静态函数。\n私有构造函数保证了只能通过公有静态函数返回唯一的私有静态变量。\n懒汉模式–线程不安全下面实现是最基本的单例模式，通过私有构造方法保证只能由公有静态函数返回唯一的私有静态变量。\n该实现优点是如果没有用到该类就不会实例化singInstance。但是在多线程下是不安全的，如果多个线程同时进入到if(singInstance == null)就会导致多次实例化singInstance。\n12345678910111213141516public class Singleton&#123;        private static Singleton singInstance;        private Singleton()&#123;        //构造方法    &#125;        public static Singleton getsingInstance()&#123;        if(singInstance == null)&#123;            singInstance = new Singleton();        &#125;        return singInstance;    &#125;    &#125;\n饿汉模式针对恶汉模式，牺牲了节约资源的优点，直接通过私有静态函数返回唯一私有静态变量。\n1private static Singleton getsingInstance = new Singleton();\n懒汉模式–线程安全对公有静态函数加锁的方式来达到线程安全。但是加悲观锁同样由于线程阻塞时间长，性能不高。\n123456public static synchronized Singleton getsingInstance()&#123;    if(singInstance == null)&#123;        singInstance = new Singleton();    &#125;    return singInstance;&#125;\n双重校验锁双重校验锁即：先判断是否已经实例化，如果没有实例化再对实例化语句加锁。之后防止未实例化的多个线程同时加锁，所以在加锁后需要再次校验判断是否实例化。\n12345678910111213141516171819public class Singleton&#123;        private volatile static Singleton singInstance;        private Singleton()&#123;        //构造方法    &#125;        public static Singleton getsingInstance()&#123;        if(singInstance == null)&#123;            synchronized(Singleton.class)&#123;                if(singInstance == null)&#123;                    singInstance = new Singleton();                &#125;            &#125;                    &#125;        return singInstance;    &#125;&#125;\n私有静态变量需要volatile修饰的原因是为了禁止重排序。\nsingInstance = new Singleton()分为三步：\n\n为singInstance分配内存空间\n初始化singInstance\n将singInstance指向分配的内存地址\n\n在单线程下重排序不影响运行，但是多线程下，如果线程1执行了1和3，线程2调用getsingInstance()时会返回singInstance，但是此时对象还没有初始化完成。\n简单工厂创建对象不暴露内部细节，使用通用接口创建对象。\n产品一个接口提供产品类的公有特性\n123456789101112public interface Product&#123;    &#125;public class exProduct1 implements Product&#123;    &#125;public class exProduct2 implements Product&#123;    &#125;public class exProduct3 implements Product&#123;    &#125;\n工厂简单工厂类，被需要实例化的客户类调用\n12345678910public class SimpleFactory&#123;    public Product creatProduct(int type)&#123;        if(type == 1)&#123;            return new exProduct1();        &#125;else if(type == 2)&#123;            return new exProduct2();        &#125;        return new exProduct3();    &#125;&#125;\n客户1234567public class Clinet&#123;    public static main(String[] args)&#123;        SimpleFactory simpleFactory = new SimpleFactory();        Product product = simpleFactory.creatProduct(1);        //do something    &#125;&#125;\n工厂方法相对于简单工厂变化在于，实例化操作交给的子类工厂。所以产品没有变化。\n工厂工厂类被细分成工厂类和子类，子类负责生产实例化\n12345678910111213141516171819202122public abstract class Factory&#123;    abstract public Product factoryMethod();    public void doSomething()&#123;        Product product = factoryMethod();        //do something    &#125;&#125;public class exProduct1 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct1();    &#125;&#125;public class exProduct2 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct2();    &#125;&#125;public class exProduct3 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct3();    &#125;&#125;\n抽象工厂代理代替原对象去完成一些操作。\n静态代理123456789101112131415161718192021222324252627282930313233343536373839404142public class UserDao implements IUserDao &#123;    @Override    public void save() &#123;        System.out.println(\"模拟：保存用户！\");    &#125;    @Override    public void find() &#123;        System.out.println(\"模拟：查询用户\");    &#125;&#125;public interface IUserDao &#123;    void save();    void find();&#125;//静态代理public class UserDaoProxy implements IUserDao &#123;    // 代理对象，需要维护一个目标对象    private IUserDao target = new UserDao();    @Override    public void save() &#123;        System.out.println(\"代理操作： 开启事务...\");        target.save();   // 执行目标对象的方法        System.out.println(\"代理操作：提交事务...\");    &#125;    @Override    public void find() &#123;        target.find();    &#125;&#125;//代理操作： 开启事务...//模拟：保存用户！//代理操作：提交事务...public class staticProxy &#123;    public static void main(String[] args) &#123;        IUserDao proxy = new UserDaoProxy();        proxy.save();    &#125;&#125;\n动态代理123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475public class UserDao implements IUserDao &#123;    @Override    public void save() &#123;        System.out.println(\"模拟：保存用户！\");    &#125;    @Override    public void find() &#123;        System.out.println(\"模拟：查询用户\");    &#125;&#125;public interface IUserDao &#123;    void save();    void find();&#125;//动态代理class ProxyFactory &#123;    // 接收一个目标对象    private Object target;    public ProxyFactory(Object target) &#123;        this.target = target;    &#125;    // 返回对目标对象(target)代理后的对象(proxy)    public Object getProxyInstance() &#123;        Object proxy = Proxy.newProxyInstance(                target.getClass().getClassLoader(),  // 目标对象使用的类加载器                target.getClass().getInterfaces(),   // 目标对象实现的所有接口                new InvocationHandler() &#123;            // 执行代理对象方法时候触发                //实现阶段不用关心代理谁                    @Override                    public Object invoke(Object proxy, Method method, Object[] args)                            throws Throwable &#123;                        // 获取当前执行的方法的方法名                        String methodName = method.getName();                        // 方法返回值                        Object result = null;                        if (\"find\".equals(methodName)) &#123;                            // 直接调用目标对象方法                            result = method.invoke(target, args);                        &#125; else &#123;                            System.out.println(\"开启事务...\");                            // 执行目标对象方法                            result = method.invoke(target, args);                            System.out.println(\"提交事务...\");                        &#125;                        return result;                    &#125;                &#125;        );        return proxy;    &#125;&#125;/***目标对象: class DesignModel.Proxy.UserDao**代理对象：class com.sun.proxy.$Proxy0**开启事务...**模拟：保存用户！**提交事务...*/public class dynamicProxy &#123;    public static void main(String[] args)&#123;        //创建目标对象        IUserDao target = new UserDao();        System.out.println(\"目标对象: \" + target.getClass());        //代理对象        IUserDao proxy = (IUserDao)new ProxyFactory(target).getProxyInstance();        System.out.println(\"代理对象：\"+proxy.getClass());        //执行代理对象的方法        proxy.save();    &#125;&#125;\n观察者定义对象之间的一对多依赖，当一个对象状态改变时，它的所有依赖都会收到通知并自动更新状态。\n适配器把一个类接口转换成另一个用户需要的接口。\n图片来源2017年1月18日13点04分，斯里兰卡锡吉里耶狮子岩登顶。前一宿喝多了，导致整个人没什么状态，没能充分享受美景，甚是遗憾。\n此间经年，沧海桑田；此间少年，物是人非。","dateCreated":"2019-05-05T13:37:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-05T13:37:00+08:00","description":"总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理","headline":"设计模式","image":["https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg","https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/05/设计模式/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/05/设计模式/","keywords":"设计模式","thumbnailUrl":"https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/","http://stackoverflow.com/users","https://twitter.com/","https://facebook.com/","https://plus.google.com/","https://www.linkedin.com/profile/","mailto"]},"articleBody":"总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理\n\n\n单例模式确保一个类只有一个实例，并提供该实例的全局访问\n构造方法私有静态变量+私有构造函数+公有静态函数。\n私有构造函数保证了只能通过公有静态函数返回唯一的私有静态变量。\n懒汉模式–线程不安全下面实现是最基本的单例模式，通过私有构造方法保证只能由公有静态函数返回唯一的私有静态变量。\n该实现优点是如果没有用到该类就不会实例化singInstance。但是在多线程下是不安全的，如果多个线程同时进入到if(singInstance == null)就会导致多次实例化singInstance。\n12345678910111213141516public class Singleton&#123;        private static Singleton singInstance;        private Singleton()&#123;        //构造方法    &#125;        public static Singleton getsingInstance()&#123;        if(singInstance == null)&#123;            singInstance = new Singleton();        &#125;        return singInstance;    &#125;    &#125;\n饿汉模式针对恶汉模式，牺牲了节约资源的优点，直接通过私有静态函数返回唯一私有静态变量。\n1private static Singleton getsingInstance = new Singleton();\n懒汉模式–线程安全对公有静态函数加锁的方式来达到线程安全。但是加悲观锁同样由于线程阻塞时间长，性能不高。\n123456public static synchronized Singleton getsingInstance()&#123;    if(singInstance == null)&#123;        singInstance = new Singleton();    &#125;    return singInstance;&#125;\n双重校验锁双重校验锁即：先判断是否已经实例化，如果没有实例化再对实例化语句加锁。之后防止未实例化的多个线程同时加锁，所以在加锁后需要再次校验判断是否实例化。\n12345678910111213141516171819public class Singleton&#123;        private volatile static Singleton singInstance;        private Singleton()&#123;        //构造方法    &#125;        public static Singleton getsingInstance()&#123;        if(singInstance == null)&#123;            synchronized(Singleton.class)&#123;                if(singInstance == null)&#123;                    singInstance = new Singleton();                &#125;            &#125;                    &#125;        return singInstance;    &#125;&#125;\n私有静态变量需要volatile修饰的原因是为了禁止重排序。\nsingInstance = new Singleton()分为三步：\n\n为singInstance分配内存空间\n初始化singInstance\n将singInstance指向分配的内存地址\n\n在单线程下重排序不影响运行，但是多线程下，如果线程1执行了1和3，线程2调用getsingInstance()时会返回singInstance，但是此时对象还没有初始化完成。\n简单工厂创建对象不暴露内部细节，使用通用接口创建对象。\n产品一个接口提供产品类的公有特性\n123456789101112public interface Product&#123;    &#125;public class exProduct1 implements Product&#123;    &#125;public class exProduct2 implements Product&#123;    &#125;public class exProduct3 implements Product&#123;    &#125;\n工厂简单工厂类，被需要实例化的客户类调用\n12345678910public class SimpleFactory&#123;    public Product creatProduct(int type)&#123;        if(type == 1)&#123;            return new exProduct1();        &#125;else if(type == 2)&#123;            return new exProduct2();        &#125;        return new exProduct3();    &#125;&#125;\n客户1234567public class Clinet&#123;    public static main(String[] args)&#123;        SimpleFactory simpleFactory = new SimpleFactory();        Product product = simpleFactory.creatProduct(1);        //do something    &#125;&#125;\n工厂方法相对于简单工厂变化在于，实例化操作交给的子类工厂。所以产品没有变化。\n工厂工厂类被细分成工厂类和子类，子类负责生产实例化\n12345678910111213141516171819202122public abstract class Factory&#123;    abstract public Product factoryMethod();    public void doSomething()&#123;        Product product = factoryMethod();        //do something    &#125;&#125;public class exProduct1 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct1();    &#125;&#125;public class exProduct2 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct2();    &#125;&#125;public class exProduct3 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct3();    &#125;&#125;\n抽象工厂代理代替原对象去完成一些操作。\n静态代理123456789101112131415161718192021222324252627282930313233343536373839404142public class UserDao implements IUserDao &#123;    @Override    public void save() &#123;        System.out.println(\"模拟：保存用户！\");    &#125;    @Override    public void find() &#123;        System.out.println(\"模拟：查询用户\");    &#125;&#125;public interface IUserDao &#123;    void save();    void find();&#125;//静态代理public class UserDaoProxy implements IUserDao &#123;    // 代理对象，需要维护一个目标对象    private IUserDao target = new UserDao();    @Override    public void save() &#123;        System.out.println(\"代理操作： 开启事务...\");        target.save();   // 执行目标对象的方法        System.out.println(\"代理操作：提交事务...\");    &#125;    @Override    public void find() &#123;        target.find();    &#125;&#125;//代理操作： 开启事务...//模拟：保存用户！//代理操作：提交事务...public class staticProxy &#123;    public static void main(String[] args) &#123;        IUserDao proxy = new UserDaoProxy();        proxy.save();    &#125;&#125;\n动态代理123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475public class UserDao implements IUserDao &#123;    @Override    public void save() &#123;        System.out.println(\"模拟：保存用户！\");    &#125;    @Override    public void find() &#123;        System.out.println(\"模拟：查询用户\");    &#125;&#125;public interface IUserDao &#123;    void save();    void find();&#125;//动态代理class ProxyFactory &#123;    // 接收一个目标对象    private Object target;    public ProxyFactory(Object target) &#123;        this.target = target;    &#125;    // 返回对目标对象(target)代理后的对象(proxy)    public Object getProxyInstance() &#123;        Object proxy = Proxy.newProxyInstance(                target.getClass().getClassLoader(),  // 目标对象使用的类加载器                target.getClass().getInterfaces(),   // 目标对象实现的所有接口                new InvocationHandler() &#123;            // 执行代理对象方法时候触发                //实现阶段不用关心代理谁                    @Override                    public Object invoke(Object proxy, Method method, Object[] args)                            throws Throwable &#123;                        // 获取当前执行的方法的方法名                        String methodName = method.getName();                        // 方法返回值                        Object result = null;                        if (\"find\".equals(methodName)) &#123;                            // 直接调用目标对象方法                            result = method.invoke(target, args);                        &#125; else &#123;                            System.out.println(\"开启事务...\");                            // 执行目标对象方法                            result = method.invoke(target, args);                            System.out.println(\"提交事务...\");                        &#125;                        return result;                    &#125;                &#125;        );        return proxy;    &#125;&#125;/***目标对象: class DesignModel.Proxy.UserDao**代理对象：class com.sun.proxy.$Proxy0**开启事务...**模拟：保存用户！**提交事务...*/public class dynamicProxy &#123;    public static void main(String[] args)&#123;        //创建目标对象        IUserDao target = new UserDao();        System.out.println(\"目标对象: \" + target.getClass());        //代理对象        IUserDao proxy = (IUserDao)new ProxyFactory(target).getProxyInstance();        System.out.println(\"代理对象：\"+proxy.getClass());        //执行代理对象的方法        proxy.save();    &#125;&#125;\n观察者定义对象之间的一对多依赖，当一个对象状态改变时，它的所有依赖都会收到通知并自动更新状态。\n适配器把一个类接口转换成另一个用户需要的接口。\n图片来源2017年1月18日13点04分，斯里兰卡锡吉里耶狮子岩登顶。前一宿喝多了，导致整个人没什么状态，没能充分享受美景，甚是遗憾。\n此间经年，沧海桑田；此间少年，物是人非。","dateCreated":"2019-05-05T13:37:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-05T13:37:00+08:00","description":"总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理","headline":"设计模式","image":["https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg","https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/05/设计模式/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/","http://stackoverflow.com/users","https://twitter.com/","https://facebook.com/","https://plus.google.com/","https://www.linkedin.com/profile/","mailto"]},"url":"/2019/05/05/设计模式/","keywords":"设计模式","thumbnailUrl":"https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg"}</script>
     <meta name="description" content="总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理">
 <meta name="keywords" content="设计模式,计算机基础,单例,工厂,代理">
 <meta property="og:type" content="blog">
@@ -35,22 +33,24 @@
         
     
     
-        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
-    
     
         <meta property="og:image" content="https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg"/>
-        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg" />
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg"/>
     
     
         <meta property="og:image" content="https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg"/>
-        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg" />
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg"/>
     
     
     <!--STYLES-->
-    <link rel="stylesheet" href="/assets/css/style-c4ozcsklz4kht2pebhp44xorvyverh23toayhn7i6ubrpyedak24hv1v0hyd.min.css">
+    <link rel="stylesheet" href="/assets/css/style-inw8pl0vcsjxbkjilkyx1wcvyzpyb5lstkp9pk3qndyvskleosndshovid8c.min.css">
     <!--STYLES END-->
     
 
+    
+
+    
+        
     
 </head>
 
@@ -60,22 +60,18 @@
 
 
     
-        
-            
-        
-    
 
 <header id="header" data-behavior="4">
     <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
     <div class="header-title">
-        <a class="header-title-link" href="/ ">莱茵河畔的固执</a>
+        <a class="header-title-link" href="/ " aria-label>
+            莱茵河畔的固执
+        </a>
     </div>
     
         
-            <a class="header-right-picture " href="#about">
+            <a class="header-right-picture " href="#about" aria-label="打开链接: /#about">
         
-        
-            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
         
         </a>
     
@@ -84,23 +80,8 @@
             <!-- Define author's picture -->
 
 
-
-        
-    
-
 <nav id="sidebar" data-behavior="4">
     <div class="sidebar-container">
-        
-            <div class="sidebar-profile">
-                <a href="/#about">
-                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
-                </a>
-                <h4 class="sidebar-profile-name">BillReus</h4>
-                
-                    <h5 class="sidebar-profile-bio"><p>多特蒙德死忠</p>
-</h5>
-                
-            </div>
         
         
             <ul class="sidebar-buttons">
@@ -141,13 +122,31 @@
                     </a>
             </li>
             
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                    
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜索</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="#about" title="关于">
+                    
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
         </ul>
         
             <ul class="sidebar-buttons">
             
                 <li class="sidebar-button">
                     
-                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                        <a class="sidebar-button-link " href="https://github.com/" title="GitHub">
                     
                         <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
                         <span class="sidebar-button-desc">GitHub</span>
@@ -156,19 +155,68 @@
             
                 <li class="sidebar-button">
                     
-                        <a class="sidebar-button-link " href="#about" title="关于">
+                        <a class="sidebar-button-link " href="http://stackoverflow.com/users" title="Stack Overflow">
                     
-                        <i class="sidebar-button-icon fa fa-user" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">关于</span>
+                        <i class="sidebar-button-icon fab fa-stack-overflow" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Stack Overflow</span>
                     </a>
             </li>
             
                 <li class="sidebar-button">
                     
-                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                        <a class="sidebar-button-link " href="https://twitter.com/" title="Twitter">
                     
-                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">搜索</span>
+                        <i class="sidebar-button-icon fab fa-twitter" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Twitter</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://facebook.com/" title="Facebook">
+                    
+                        <i class="sidebar-button-icon fab fa-facebook" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Facebook</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://plus.google.com/" title="Google Plus">
+                    
+                        <i class="sidebar-button-icon fab fa-google-plus" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Google Plus</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://www.linkedin.com/profile/" title="LinkedIn">
+                    
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/mailto" title="邮箱">
+                    
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">邮箱</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/atom.xml" title="RSS">
+                    
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">RSS</span>
                     </a>
             </li>
             
@@ -263,6 +311,7 @@
 <p align="right">此间经年，沧海桑田；此间少年，物是人非。</p>
             
 
+
         </div>
     </div>
     <div id="post-footer" class="post-footer main-content-wrap">
@@ -281,20 +330,20 @@
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="上一篇: Java8">
-                
-                    <i class="fa fa-angle-left" aria-hidden="true"></i>
-                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="上一篇: Java8">
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
             </li>
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/02/博客用途/" data-tooltip="开篇" aria-label="下一篇: 开篇">
-                
-                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
-                    <i class="fa fa-angle-right" aria-hidden="true"></i>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/02/博客用途/" data-tooltip="开篇" aria-label="下一篇: 开篇">
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
             </li>
         </ul>
     </nav>
@@ -308,16 +357,24 @@
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/05/设计模式/" title="分享到 Weibo">
-                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/05/设计模式/" title="分享到 Facebook" aria-label="分享到 Facebook">
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
                 </a>
             </li>
         
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/05/设计模式/&amp;title=设计模式" title="分享到 QQ">
-                    <i class="fab fa-qq" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/05/设计模式/" title="分享到 Twitter" aria-label="分享到 Twitter">
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=/2019/05/05/设计模式/" title="分享到 Google+" aria-label="分享到 Google+">
+                    <i class="fab fa-google-plus" aria-hidden="true"></i>
                 </a>
             </li>
         
@@ -359,20 +416,20 @@
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="上一篇: Java8">
-                
-                    <i class="fa fa-angle-left" aria-hidden="true"></i>
-                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="上一篇: Java8">
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
             </li>
             <li class="post-action">
                 
                     
-                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/02/博客用途/" data-tooltip="开篇" aria-label="下一篇: 开篇">
-                
-                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
-                    <i class="fa fa-angle-right" aria-hidden="true"></i>
-                </a>
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/02/博客用途/" data-tooltip="开篇" aria-label="下一篇: 开篇">
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
             </li>
         </ul>
     </nav>
@@ -386,16 +443,24 @@
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/05/设计模式/" title="分享到 Weibo">
-                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/05/设计模式/" title="分享到 Facebook" aria-label="分享到 Facebook">
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
                 </a>
             </li>
         
             
             
             <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/05/设计模式/&amp;title=设计模式" title="分享到 QQ">
-                    <i class="fab fa-qq" aria-hidden="true"></i>
+                <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/05/设计模式/" title="分享到 Twitter" aria-label="分享到 Twitter">
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=/2019/05/05/设计模式/" title="分享到 Google+" aria-label="分享到 Google+">
+                    <i class="fab fa-google-plus" aria-hidden="true"></i>
                 </a>
             </li>
         
@@ -422,16 +487,24 @@
                 
                 
                 <li class="share-option">
-                    <a class="share-option-btn" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/05/设计模式/">
-                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/05/设计模式/" aria-label="分享到 Facebook">
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
                     </a>
                 </li>
             
                 
                 
                 <li class="share-option">
-                    <a class="share-option-btn" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/05/设计模式/&amp;title=设计模式">
-                        <i class="fab fa-qq" aria-hidden="true"></i><span>分享到 QQ</span>
+                    <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/05/设计模式/" aria-label="分享到 Twitter">
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=/2019/05/05/设计模式/" aria-label="分享到 Google+">
+                        <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google+</span>
                     </a>
                 </li>
             
@@ -444,49 +517,39 @@
         
 
 
-    
-        
-    
-
 <div id="about">
     <div id="about-card">
         <div id="about-btn-close">
             <i class="fa fa-times"></i>
         </div>
         
-            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
-        
             <h4 id="about-card-name">BillReus</h4>
         
-            <div id="about-card-bio"><p>多特蒙德死忠</p>
+            <div id="about-card-bio"><p>author.bio</p>
 </div>
         
         
             <div id="about-card-job">
                 <i class="fa fa-briefcase"></i>
                 <br>
-                <p>等Offer</p>
+                <p>author.job</p>
 
             </div>
         
-        
-            <div id="about-card-location">
-                <i class="fa fa-map-marker-alt"></i>
-                <br>
-                China
-            </div>
         
     </div>
 </div>
 
         
         
-<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
+<div id="cover" style="background-image:url('/assets/images/cover.jpg');"></div>
         <!--SCRIPTS-->
-<script src="/assets/js/script-dbd16rvloemmuxdzniplmnxxvwoz24eya9wol0b7vvmlokgqsjivmb8dnscy.min.js"></script>
+<script src="/assets/js/script-iupfu4cvozqvsi1hhazhbob6uip1kfivmhmcidsf0ja5ike2vagngtevm6j3.min.js"></script>
 <!--SCRIPTS END-->
 
+
     
+
 
 
 
