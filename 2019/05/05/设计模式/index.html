@@ -1,0 +1,494 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="莱茵河畔的固执">
+    <title>设计模式 - 莱茵河畔的固执</title>
+    <meta name="author" content="BillReus">
+    
+        <meta name="keywords" content="设计模式,计算机基础,单例,工厂,代理">
+    
+    
+        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
+    
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理\n\n\n单例模式确保一个类只有一个实例，并提供该实例的全局访问\n构造方法私有静态变量+私有构造函数+公有静态函数。\n私有构造函数保证了只能通过公有静态函数返回唯一的私有静态变量。\n懒汉模式–线程不安全下面实现是最基本的单例模式，通过私有构造方法保证只能由公有静态函数返回唯一的私有静态变量。\n该实现优点是如果没有用到该类就不会实例化singInstance。但是在多线程下是不安全的，如果多个线程同时进入到if(singInstance == null)就会导致多次实例化singInstance。\n12345678910111213141516public class Singleton&#123;        private static Singleton singInstance;        private Singleton()&#123;        //构造方法    &#125;        public static Singleton getsingInstance()&#123;        if(singInstance == null)&#123;            singInstance = new Singleton();        &#125;        return singInstance;    &#125;    &#125;\n饿汉模式针对恶汉模式，牺牲了节约资源的优点，直接通过私有静态函数返回唯一私有静态变量。\n1private static Singleton getsingInstance = new Singleton();\n懒汉模式–线程安全对公有静态函数加锁的方式来达到线程安全。但是加悲观锁同样由于线程阻塞时间长，性能不高。\n123456public static synchronized Singleton getsingInstance()&#123;    if(singInstance == null)&#123;        singInstance = new Singleton();    &#125;    return singInstance;&#125;\n双重校验锁双重校验锁即：先判断是否已经实例化，如果没有实例化再对实例化语句加锁。之后防止未实例化的多个线程同时加锁，所以在加锁后需要再次校验判断是否实例化。\n12345678910111213141516171819public class Singleton&#123;        private volatile static Singleton singInstance;        private Singleton()&#123;        //构造方法    &#125;        public static Singleton getsingInstance()&#123;        if(singInstance == null)&#123;            synchronized(Singleton.class)&#123;                if(singInstance == null)&#123;                    singInstance = new Singleton();                &#125;            &#125;                    &#125;        return singInstance;    &#125;&#125;\n私有静态变量需要volatile修饰的原因是为了禁止重排序。\nsingInstance = new Singleton()分为三步：\n\n为singInstance分配内存空间\n初始化singInstance\n将singInstance指向分配的内存地址\n\n在单线程下重排序不影响运行，但是多线程下，如果线程1执行了1和3，线程2调用getsingInstance()时会返回singInstance，但是此时对象还没有初始化完成。\n简单工厂创建对象不暴露内部细节，使用通用接口创建对象。\n产品一个接口提供产品类的公有特性\n123456789101112public interface Product&#123;    &#125;public class exProduct1 implements Product&#123;    &#125;public class exProduct2 implements Product&#123;    &#125;public class exProduct3 implements Product&#123;    &#125;\n工厂简单工厂类，被需要实例化的客户类调用\n12345678910public class SimpleFactory&#123;    public Product creatProduct(int type)&#123;        if(type == 1)&#123;            return new exProduct1();        &#125;else if(type == 2)&#123;            return new exProduct2();        &#125;        return new exProduct3();    &#125;&#125;\n客户1234567public class Clinet&#123;    public static main(String[] args)&#123;        SimpleFactory simpleFactory = new SimpleFactory();        Product product = simpleFactory.creatProduct(1);        //do something    &#125;&#125;\n工厂方法相对于简单工厂变化在于，实例化操作交给的子类工厂。所以产品没有变化。\n工厂工厂类被细分成工厂类和子类，子类负责生产实例化\n12345678910111213141516171819202122public abstract class Factory&#123;    abstract public Product factoryMethod();    public void doSomething()&#123;        Product product = factoryMethod();        //do something    &#125;&#125;public class exProduct1 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct1();    &#125;&#125;public class exProduct2 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct2();    &#125;&#125;public class exProduct3 extends Factory&#123;    public Product factoryMethod()&#123;        return new exProduct3();    &#125;&#125;\n抽象工厂代理代替原对象去完成一些操作。\n静态代理123456789101112131415161718192021222324252627282930313233343536373839404142public class UserDao implements IUserDao &#123;    @Override    public void save() &#123;        System.out.println(\"模拟：保存用户！\");    &#125;    @Override    public void find() &#123;        System.out.println(\"模拟：查询用户\");    &#125;&#125;public interface IUserDao &#123;    void save();    void find();&#125;//静态代理public class UserDaoProxy implements IUserDao &#123;    // 代理对象，需要维护一个目标对象    private IUserDao target = new UserDao();    @Override    public void save() &#123;        System.out.println(\"代理操作： 开启事务...\");        target.save();   // 执行目标对象的方法        System.out.println(\"代理操作：提交事务...\");    &#125;    @Override    public void find() &#123;        target.find();    &#125;&#125;//代理操作： 开启事务...//模拟：保存用户！//代理操作：提交事务...public class staticProxy &#123;    public static void main(String[] args) &#123;        IUserDao proxy = new UserDaoProxy();        proxy.save();    &#125;&#125;\n动态代理123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475public class UserDao implements IUserDao &#123;    @Override    public void save() &#123;        System.out.println(\"模拟：保存用户！\");    &#125;    @Override    public void find() &#123;        System.out.println(\"模拟：查询用户\");    &#125;&#125;public interface IUserDao &#123;    void save();    void find();&#125;//动态代理class ProxyFactory &#123;    // 接收一个目标对象    private Object target;    public ProxyFactory(Object target) &#123;        this.target = target;    &#125;    // 返回对目标对象(target)代理后的对象(proxy)    public Object getProxyInstance() &#123;        Object proxy = Proxy.newProxyInstance(                target.getClass().getClassLoader(),  // 目标对象使用的类加载器                target.getClass().getInterfaces(),   // 目标对象实现的所有接口                new InvocationHandler() &#123;            // 执行代理对象方法时候触发                //实现阶段不用关心代理谁                    @Override                    public Object invoke(Object proxy, Method method, Object[] args)                            throws Throwable &#123;                        // 获取当前执行的方法的方法名                        String methodName = method.getName();                        // 方法返回值                        Object result = null;                        if (\"find\".equals(methodName)) &#123;                            // 直接调用目标对象方法                            result = method.invoke(target, args);                        &#125; else &#123;                            System.out.println(\"开启事务...\");                            // 执行目标对象方法                            result = method.invoke(target, args);                            System.out.println(\"提交事务...\");                        &#125;                        return result;                    &#125;                &#125;        );        return proxy;    &#125;&#125;/***目标对象: class DesignModel.Proxy.UserDao**代理对象：class com.sun.proxy.$Proxy0**开启事务...**模拟：保存用户！**提交事务...*/public class dynamicProxy &#123;    public static void main(String[] args)&#123;        //创建目标对象        IUserDao target = new UserDao();        System.out.println(\"目标对象: \" + target.getClass());        //代理对象        IUserDao proxy = (IUserDao)new ProxyFactory(target).getProxyInstance();        System.out.println(\"代理对象：\"+proxy.getClass());        //执行代理对象的方法        proxy.save();    &#125;&#125;\n观察者定义对象之间的一对多依赖，当一个对象状态改变时，它的所有依赖都会收到通知并自动更新状态。\n适配器把一个类接口转换成另一个用户需要的接口。\n图片来源2017年1月18日13点04分，斯里兰卡锡吉里耶狮子岩登顶。前一宿喝多了，导致整个人没什么状态，没能充分享受美景，甚是遗憾。\n此间经年，沧海桑田；此间少年，物是人非。","dateCreated":"2019-05-05T13:37:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-05T13:37:00+08:00","description":"总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理","headline":"设计模式","image":["https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg","https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/05/设计模式/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/05/设计模式/","keywords":"设计模式","thumbnailUrl":"https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg"}</script>
+    <meta name="description" content="总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理">
+<meta name="keywords" content="设计模式,计算机基础,单例,工厂,代理">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="设计模式">
+<meta property="og:url" content="/2019/05/05/设计模式/index.html">
+<meta property="og:site_name" content="莱茵河畔的固执">
+<meta property="og:description" content="总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:updated_time" content="2019-10-28T12:15:53.408Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="设计模式">
+<meta name="twitter:description" content="总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/29/VuwcX8.md.jpg" />
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg" />
+    
+    
+    <!--STYLES-->
+    <link rel="stylesheet" href="/assets/css/style-c4ozcsklz4kht2pebhp44xorvyverh23toayhn7i6ubrpyedak24hv1v0hyd.min.css">
+    <!--STYLES END-->
+    
+
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a class="header-title-link" href="/ ">莱茵河畔的固执</a>
+    </div>
+    
+        
+            <a class="header-right-picture " href="#about">
+        
+        
+            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a href="/#about">
+                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+                </a>
+                <h4 class="sidebar-profile-name">BillReus</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>多特蒙德死忠</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/ " title="首页">
+                    
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首页</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-categories" title="分类">
+                    
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分类</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-tags" title="标签">
+                    
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">标签</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-archives" title="归档">
+                    
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">归档</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                    
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="#about" title="关于">
+                    
+                        <i class="sidebar-button-icon fa fa-user" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                    
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜索</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+        <div class="post-header-cover
+                    text-left
+                    " style="background-image:url('https://s2.ax1x.com/2019/05/29/Vuw2nS.jpg');" data-behavior="4">
+            
+                <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            设计模式
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2019-05-05T13:37:00+08:00">
+	
+		    5月 05, 2019
+    	
+    </time>
+    
+        <span>发布在 </span>
+        
+    <a class="category-link" href="/categories/计算机基础/">计算机基础</a>
+
+
+    
+</div>
+
+    
+</div>
+
+            
+        </div>
+
+            <div id="main" data-behavior="4"
+                 class="hasCover
+                        hasCoverMetaIn
+                        hasCoverCaption">
+                
+<article class="post">
+    
+        <span class="post-header-cover-caption caption">圣米歇尔山</span>
+    
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>总结常用的设计模式：单例，简单工厂，工厂方法，抽象工厂，代理</p>
+<a id="more"></a>
+<h1 id="table-of-contents">目录</h1><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#单例模式"><span class="toc-text">单例模式</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#构造方法"><span class="toc-text">构造方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#懒汉模式–线程不安全"><span class="toc-text">懒汉模式–线程不安全</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#饿汉模式"><span class="toc-text">饿汉模式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#懒汉模式–线程安全"><span class="toc-text">懒汉模式–线程安全</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#双重校验锁"><span class="toc-text">双重校验锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#简单工厂"><span class="toc-text">简单工厂</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#产品"><span class="toc-text">产品</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#工厂"><span class="toc-text">工厂</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#客户"><span class="toc-text">客户</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#工厂方法"><span class="toc-text">工厂方法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#工厂-1"><span class="toc-text">工厂</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#抽象工厂"><span class="toc-text">抽象工厂</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#代理"><span class="toc-text">代理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#静态代理"><span class="toc-text">静态代理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#动态代理"><span class="toc-text">动态代理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#观察者"><span class="toc-text">观察者</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#适配器"><span class="toc-text">适配器</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#图片来源"><span class="toc-text">图片来源</span></a></li></ol>
+<h1 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h1><p>确保一个类只有一个实例，并提供该实例的全局访问</p>
+<h2 id="构造方法"><a href="#构造方法" class="headerlink" title="构造方法"></a>构造方法</h2><p>私有静态变量+私有构造函数+公有静态函数。</p>
+<p>私有构造函数保证了只能通过公有静态函数返回唯一的私有静态变量。</p>
+<h2 id="懒汉模式–线程不安全"><a href="#懒汉模式–线程不安全" class="headerlink" title="懒汉模式–线程不安全"></a>懒汉模式–线程不安全</h2><p>下面实现是最基本的单例模式，通过私有构造方法保证只能由公有静态函数返回唯一的私有静态变量。</p>
+<p>该实现优点是如果没有用到该类就不会实例化singInstance。但是在多线程下是不安全的，如果多个线程同时进入到<code>if(singInstance == null)</code>就会导致多次实例化singInstance。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton singInstance;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">//构造方法</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getsingInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(singInstance == <span class="keyword">null</span>)&#123;</span><br><span class="line">            singInstance = <span class="keyword">new</span> Singleton();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> singInstance;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="饿汉模式"><a href="#饿汉模式" class="headerlink" title="饿汉模式"></a>饿汉模式</h2><p>针对恶汉模式，牺牲了节约资源的优点，直接通过私有静态函数返回唯一私有静态变量。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> Singleton getsingInstance = <span class="keyword">new</span> Singleton();</span><br></pre></td></tr></table></figure>
+<h2 id="懒汉模式–线程安全"><a href="#懒汉模式–线程安全" class="headerlink" title="懒汉模式–线程安全"></a>懒汉模式–线程安全</h2><p>对公有静态函数加锁的方式来达到线程安全。但是加悲观锁同样由于线程阻塞时间长，性能不高。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> Singleton <span class="title">getsingInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(singInstance == <span class="keyword">null</span>)&#123;</span><br><span class="line">        singInstance = <span class="keyword">new</span> Singleton();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> singInstance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="双重校验锁"><a href="#双重校验锁" class="headerlink" title="双重校验锁"></a>双重校验锁</h2><p>双重校验锁即：先判断是否已经实例化，如果没有实例化再对实例化语句加锁。之后防止未实例化的多个线程同时加锁，所以在加锁后需要再次校验判断是否实例化。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> Singleton singInstance;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">//构造方法</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getsingInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(singInstance == <span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span>(Singleton.class)&#123;</span><br><span class="line">                <span class="keyword">if</span>(singInstance == <span class="keyword">null</span>)&#123;</span><br><span class="line">                    singInstance = <span class="keyword">new</span> Singleton();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;            </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> singInstance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>私有静态变量需要volatile修饰的原因是为了禁止重排序。</p>
+<p><code>singInstance = new Singleton()</code>分为三步：</p>
+<ol>
+<li>为singInstance分配内存空间</li>
+<li>初始化singInstance</li>
+<li>将singInstance指向分配的内存地址</li>
+</ol>
+<p>在单线程下重排序不影响运行，但是多线程下，如果线程1执行了1和3，线程2调用getsingInstance()时会返回singInstance，但是此时对象还没有初始化完成。</p>
+<h1 id="简单工厂"><a href="#简单工厂" class="headerlink" title="简单工厂"></a>简单工厂</h1><p>创建对象不暴露内部细节，使用通用接口创建对象。</p>
+<h2 id="产品"><a href="#产品" class="headerlink" title="产品"></a>产品</h2><p>一个接口提供产品类的公有特性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Product</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">exProduct1</span> <span class="keyword">implements</span> <span class="title">Product</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">exProduct2</span> <span class="keyword">implements</span> <span class="title">Product</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">exProduct3</span> <span class="keyword">implements</span> <span class="title">Product</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="工厂"><a href="#工厂" class="headerlink" title="工厂"></a>工厂</h2><p>简单工厂类，被需要实例化的客户类调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SimpleFactory</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Product <span class="title">creatProduct</span><span class="params">(<span class="keyword">int</span> type)</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(type == <span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> exProduct1();</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">if</span>(type == <span class="number">2</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> exProduct2();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> exProduct3();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="客户"><a href="#客户" class="headerlink" title="客户"></a>客户</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Clinet</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">        SimpleFactory simpleFactory = <span class="keyword">new</span> SimpleFactory();</span><br><span class="line">        Product product = simpleFactory.creatProduct(<span class="number">1</span>);</span><br><span class="line">        <span class="comment">//do something</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="工厂方法"><a href="#工厂方法" class="headerlink" title="工厂方法"></a>工厂方法</h1><p>相对于简单工厂变化在于，实例化操作交给的子类工厂。所以产品没有变化。</p>
+<h2 id="工厂-1"><a href="#工厂-1" class="headerlink" title="工厂"></a>工厂</h2><p>工厂类被细分成工厂类和子类，子类负责生产实例化</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Factory</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">abstract</span> <span class="keyword">public</span> Product <span class="title">factoryMethod</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span></span>&#123;</span><br><span class="line">        Product product = factoryMethod();</span><br><span class="line">        <span class="comment">//do something</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">exProduct1</span> <span class="keyword">extends</span> <span class="title">Factory</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Product <span class="title">factoryMethod</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> exProduct1();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">exProduct2</span> <span class="keyword">extends</span> <span class="title">Factory</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Product <span class="title">factoryMethod</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> exProduct2();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">exProduct3</span> <span class="keyword">extends</span> <span class="title">Factory</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Product <span class="title">factoryMethod</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> exProduct3();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="抽象工厂"><a href="#抽象工厂" class="headerlink" title="抽象工厂"></a>抽象工厂</h1><h1 id="代理"><a href="#代理" class="headerlink" title="代理"></a>代理</h1><p>代替原对象去完成一些操作。</p>
+<h2 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a>静态代理</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDao</span> <span class="keyword">implements</span> <span class="title">IUserDao</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">save</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"模拟：保存用户！"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">find</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"模拟：查询用户"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">IUserDao</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">save</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">find</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//静态代理</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDaoProxy</span> <span class="keyword">implements</span> <span class="title">IUserDao</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 代理对象，需要维护一个目标对象</span></span><br><span class="line">    <span class="keyword">private</span> IUserDao target = <span class="keyword">new</span> UserDao();</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">save</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"代理操作： 开启事务..."</span>);</span><br><span class="line">        target.save();   <span class="comment">// 执行目标对象的方法</span></span><br><span class="line">        System.out.println(<span class="string">"代理操作：提交事务..."</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">find</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        target.find();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//代理操作： 开启事务...</span></span><br><span class="line"><span class="comment">//模拟：保存用户！</span></span><br><span class="line"><span class="comment">//代理操作：提交事务...</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">staticProxy</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        IUserDao proxy = <span class="keyword">new</span> UserDaoProxy();</span><br><span class="line">        proxy.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDao</span> <span class="keyword">implements</span> <span class="title">IUserDao</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">save</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"模拟：保存用户！"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">find</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"模拟：查询用户"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">IUserDao</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">save</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">find</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//动态代理</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ProxyFactory</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 接收一个目标对象</span></span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ProxyFactory</span><span class="params">(Object target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 返回对目标对象(target)代理后的对象(proxy)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getProxyInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Object proxy = Proxy.newProxyInstance(</span><br><span class="line">                target.getClass().getClassLoader(),  <span class="comment">// 目标对象使用的类加载器</span></span><br><span class="line">                target.getClass().getInterfaces(),   <span class="comment">// 目标对象实现的所有接口</span></span><br><span class="line">                <span class="keyword">new</span> InvocationHandler() &#123;            <span class="comment">// 执行代理对象方法时候触发</span></span><br><span class="line">                <span class="comment">//实现阶段不用关心代理谁</span></span><br><span class="line">                    <span class="meta">@Override</span></span><br><span class="line">                    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span></span></span><br><span class="line"><span class="function">                            <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">// 获取当前执行的方法的方法名</span></span><br><span class="line">                        String methodName = method.getName();</span><br><span class="line">                        <span class="comment">// 方法返回值</span></span><br><span class="line">                        Object result = <span class="keyword">null</span>;</span><br><span class="line">                        <span class="keyword">if</span> (<span class="string">"find"</span>.equals(methodName)) &#123;</span><br><span class="line">                            <span class="comment">// 直接调用目标对象方法</span></span><br><span class="line">                            result = method.invoke(target, args);</span><br><span class="line">                        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                            System.out.println(<span class="string">"开启事务..."</span>);</span><br><span class="line">                            <span class="comment">// 执行目标对象方法</span></span><br><span class="line">                            result = method.invoke(target, args);</span><br><span class="line">                            System.out.println(<span class="string">"提交事务..."</span>);</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">return</span> result;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line">        <span class="keyword">return</span> proxy;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">**目标对象: class DesignModel.Proxy.UserDao</span></span><br><span class="line"><span class="comment">**代理对象：class com.sun.proxy.$Proxy0</span></span><br><span class="line"><span class="comment">**开启事务...</span></span><br><span class="line"><span class="comment">**模拟：保存用户！</span></span><br><span class="line"><span class="comment">**提交事务...</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">dynamicProxy</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">        <span class="comment">//创建目标对象</span></span><br><span class="line">        IUserDao target = <span class="keyword">new</span> UserDao();</span><br><span class="line">        System.out.println(<span class="string">"目标对象: "</span> + target.getClass());</span><br><span class="line">        <span class="comment">//代理对象</span></span><br><span class="line">        IUserDao proxy = (IUserDao)<span class="keyword">new</span> ProxyFactory(target).getProxyInstance();</span><br><span class="line">        System.out.println(<span class="string">"代理对象："</span>+proxy.getClass());</span><br><span class="line">        <span class="comment">//执行代理对象的方法</span></span><br><span class="line">        proxy.save();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="观察者"><a href="#观察者" class="headerlink" title="观察者"></a>观察者</h1><p>定义对象之间的一对多依赖，当一个对象状态改变时，它的所有依赖都会收到通知并自动更新状态。</p>
+<h1 id="适配器"><a href="#适配器" class="headerlink" title="适配器"></a>适配器</h1><p>把一个类接口转换成另一个用户需要的接口。</p>
+<h1 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h1><p>2017年1月18日13点04分，斯里兰卡锡吉里耶狮子岩登顶。前一宿喝多了，导致整个人没什么状态，没能充分享受美景，甚是遗憾。</p>
+<p align="right">此间经年，沧海桑田；此间少年，物是人非。</p>
+            
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">标签</span><br>
+                
+    <a class="tag tag--primary tag--small t-link" href="/tags/设计模式/">设计模式</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="上一篇: Java8">
+                
+                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/02/博客用途/" data-tooltip="开篇" aria-label="下一篇: 开篇">
+                
+                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/05/设计模式/" title="分享到 Weibo">
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/05/设计模式/&amp;title=设计模式" title="分享到 QQ">
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2019 BillReus. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="上一篇: Java8">
+                
+                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/02/博客用途/" data-tooltip="开篇" aria-label="下一篇: 开篇">
+                
+                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/05/设计模式/" title="分享到 Weibo">
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/05/设计模式/&amp;title=设计模式" title="分享到 QQ">
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/05/设计模式/">
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/05/设计模式/&amp;title=设计模式">
+                        <i class="fab fa-qq" aria-hidden="true"></i><span>分享到 QQ</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
+            <h4 id="about-card-name">BillReus</h4>
+        
+            <div id="about-card-bio"><p>多特蒙德死忠</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br>
+                <p>等Offer</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br>
+                China
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
+        <!--SCRIPTS-->
+<script src="/assets/js/script-dbd16rvloemmuxdzniplmnxxvwoz24eya9wol0b7vvmlokgqsjivmb8dnscy.min.js"></script>
+<!--SCRIPTS END-->
+
+    
+
+
+
+    </body>
+</html>

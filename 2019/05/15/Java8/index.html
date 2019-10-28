@@ -1,0 +1,470 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="莱茵河畔的固执">
+    <title>Java8 - 莱茵河畔的固执</title>
+    <meta name="author" content="BillReus">
+    
+        <meta name="keywords" content="Java8">
+    
+    
+        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
+    
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"Java8特性\n\nLambda表达式Lambda表达式也称为闭包，允许把函数作为一个方法的参数。\n语法格式如下：\n12345(parameters) -&gt; expression(parameters -&gt; &#123;\tstatements;\tstatements1;\t&#125;);\n常用于返回参数：\n1234567891011//返回5() -&gt; 5    //返回一个参数的两倍x -&gt; 2*x//返回两个参数的差值(x, y) -&gt; x-y//接收一个对象，打印(String s) -&gt; System.out.print(s)\n用于重写方法（匿名类）：\n1234567891011121314// 使用 java 7 排序private void sortUsingJava7(List&lt;String&gt; names)&#123;      Collections.sort(names, new Comparator&lt;String&gt;() &#123;      @Override      public int compare(String s1, String s2) &#123;         return s1.compareTo(s2);      &#125;   &#125;);&#125;   // 使用 java 8 排序private void sortUsingJava8(List&lt;String&gt; names)&#123;   Collections.sort(names, (s1, s2) -&gt; s1.compareTo(s2));&#125;\n用于代替匿名类创建线程：\n12345678910111213141516171819202122232425262728//实现Runnable接口public class MyRunnable implements Runnable &#123;    public void run() &#123;        // ...    &#125;&#125;public static void main(String[] args) &#123;    MyRunnable instance = new MyRunnable();    Thread thread = new Thread(instance);    thread.start();&#125;//等价于public static void main(String[] args)&#123;    new Thread(new Runnable()&#123;        @Override        public void run()&#123;            //...        &#125;    &#125;).start();&#125;//Java8public static void main(String[] args)&#123;    new Thread(() -&gt; &#123;        //...    &#125;).start();&#125;\n方法引用通常使用lambda表达式创建匿名方法，有时我们只调用一个已存在的方法，可以使用方法引用来简写\n12Arrays.sort(stringsArray,(s1,s2)-&gt;s1.compareToIgnoreCase(s2));Arrays.sort(stringsArray, String::compareToIgnoreCase);\n图片来源17年1月21日9点30分，斯里兰卡皇家植物园，中间黑点是我= =\n","dateCreated":"2019-05-15T14:53:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-15T14:53:00+08:00","description":"Java8特性","headline":"Java8","image":["https://s2.ax1x.com/2019/05/15/ET5e9f.jpg","https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/15/Java8/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/15/Java8/","keywords":"Java","thumbnailUrl":"https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"}</script>
+    <meta name="description" content="Java8特性">
+<meta name="keywords" content="Java8">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="Java8">
+<meta property="og:url" content="/2019/05/15/Java8/index.html">
+<meta property="og:site_name" content="莱茵河畔的固执">
+<meta property="og:description" content="Java8特性">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:updated_time" content="2019-10-28T12:15:53.402Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java8">
+<meta name="twitter:description" content="Java8特性">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/15/ET5e9f.jpg" />
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/15/ET4qB9.jpg" />
+    
+    
+    <!--STYLES-->
+    <link rel="stylesheet" href="/assets/css/style-c4ozcsklz4kht2pebhp44xorvyverh23toayhn7i6ubrpyedak24hv1v0hyd.min.css">
+    <!--STYLES END-->
+    
+
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a class="header-title-link" href="/ ">莱茵河畔的固执</a>
+    </div>
+    
+        
+            <a class="header-right-picture " href="#about">
+        
+        
+            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a href="/#about">
+                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+                </a>
+                <h4 class="sidebar-profile-name">BillReus</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>多特蒙德死忠</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/ " title="首页">
+                    
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首页</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-categories" title="分类">
+                    
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分类</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-tags" title="标签">
+                    
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">标签</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-archives" title="归档">
+                    
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">归档</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                    
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="#about" title="关于">
+                    
+                        <i class="sidebar-button-icon fa fa-user" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                    
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜索</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+        <div class="post-header-cover
+                    text-left
+                    " style="background-image:url('https://s2.ax1x.com/2019/05/15/ET4qB9.jpg');" data-behavior="4">
+            
+                <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            Java8
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2019-05-15T14:53:00+08:00">
+	
+		    5月 15, 2019
+    	
+    </time>
+    
+        <span>发布在 </span>
+        
+    <a class="category-link" href="/categories/Java/">Java</a>
+
+
+    
+</div>
+
+    
+</div>
+
+            
+        </div>
+
+            <div id="main" data-behavior="4"
+                 class="hasCover
+                        hasCoverMetaIn
+                        hasCoverCaption">
+                
+<article class="post">
+    
+        <span class="post-header-cover-caption caption">松木国家森林</span>
+    
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>Java8特性<br><a id="more"></a></p>
+<h1 id="table-of-contents">目录</h1><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Lambda表达式"><span class="toc-text">Lambda表达式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方法引用"><span class="toc-text">方法引用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#图片来源"><span class="toc-text">图片来源</span></a></li></ol>
+<h2 id="Lambda表达式"><a href="#Lambda表达式" class="headerlink" title="Lambda表达式"></a>Lambda表达式</h2><p>Lambda表达式也称为闭包，允许把函数作为一个方法的参数。</p>
+<p>语法格式如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">(parameters) -&gt; expression</span><br><span class="line">(parameters -&gt; &#123;</span><br><span class="line">	statements;</span><br><span class="line">	statements1;	</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>常用于返回参数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回5</span></span><br><span class="line">() -&gt; <span class="number">5</span></span><br><span class="line">    </span><br><span class="line"><span class="comment">//返回一个参数的两倍</span></span><br><span class="line">x -&gt; <span class="number">2</span>*x</span><br><span class="line"></span><br><span class="line"><span class="comment">//返回两个参数的差值</span></span><br><span class="line">(x, y) -&gt; x-y</span><br><span class="line"></span><br><span class="line"><span class="comment">//接收一个对象，打印</span></span><br><span class="line">(String s) -&gt; System.out.print(s)</span><br></pre></td></tr></table></figure>
+<p>用于重写方法（匿名类）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 使用 java 7 排序</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">sortUsingJava7</span><span class="params">(List&lt;String&gt; names)</span></span>&#123;   </span><br><span class="line">   Collections.sort(names, <span class="keyword">new</span> Comparator&lt;String&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span></span><br><span class="line">      <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compare</span><span class="params">(String s1, String s2)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">return</span> s1.compareTo(s2);</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;);</span><br><span class="line">&#125;</span><br><span class="line">   </span><br><span class="line"><span class="comment">// 使用 java 8 排序</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">sortUsingJava8</span><span class="params">(List&lt;String&gt; names)</span></span>&#123;</span><br><span class="line">   Collections.sort(names, (s1, s2) -&gt; s1.compareTo(s2));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>用于代替匿名类创建线程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//实现Runnable接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyRunnable</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    MyRunnable instance = <span class="keyword">new</span> MyRunnable();</span><br><span class="line">    Thread thread = <span class="keyword">new</span> Thread(instance);</span><br><span class="line">    thread.start();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//等价于</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">    <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">            <span class="comment">//...</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//Java8</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">    <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">        <span class="comment">//...</span></span><br><span class="line">    &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="方法引用"><a href="#方法引用" class="headerlink" title="方法引用"></a>方法引用</h2><p>通常使用lambda表达式创建匿名方法，有时我们只调用一个已存在的方法，可以使用方法引用来简写</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Arrays.sort(stringsArray,(s1,s2)-&gt;s1.compareToIgnoreCase(s2));</span><br><span class="line">Arrays.sort(stringsArray, String::compareToIgnoreCase);</span><br></pre></td></tr></table></figure>
+<h2 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h2><p>17年1月21日9点30分，斯里兰卡皇家植物园，中间黑点是我= =</p>
+
+            
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">标签</span><br>
+                
+    <a class="tag tag--primary tag--small t-link" href="/tags/Java/">Java</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/18/Redis一致性/" data-tooltip="Redis缓存和消息队列" aria-label="上一篇: Redis缓存和消息队列">
+                
+                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/05/设计模式/" data-tooltip="设计模式" aria-label="下一篇: 设计模式">
+                
+                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/15/Java8/" title="分享到 Weibo">
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/15/Java8/&amp;title=Java8" title="分享到 QQ">
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2019 BillReus. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/18/Redis一致性/" data-tooltip="Redis缓存和消息队列" aria-label="上一篇: Redis缓存和消息队列">
+                
+                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/05/设计模式/" data-tooltip="设计模式" aria-label="下一篇: 设计模式">
+                
+                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/15/Java8/" title="分享到 Weibo">
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/15/Java8/&amp;title=Java8" title="分享到 QQ">
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/15/Java8/">
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/15/Java8/&amp;title=Java8">
+                        <i class="fab fa-qq" aria-hidden="true"></i><span>分享到 QQ</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
+            <h4 id="about-card-name">BillReus</h4>
+        
+            <div id="about-card-bio"><p>多特蒙德死忠</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br>
+                <p>等Offer</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br>
+                China
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
+        <!--SCRIPTS-->
+<script src="/assets/js/script-dbd16rvloemmuxdzniplmnxxvwoz24eya9wol0b7vvmlokgqsjivmb8dnscy.min.js"></script>
+<!--SCRIPTS END-->
+
+    
+
+
+
+    </body>
+</html>

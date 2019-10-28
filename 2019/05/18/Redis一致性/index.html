@@ -1,0 +1,523 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="莱茵河畔的固执">
+    <title>Redis缓存和消息队列 - 莱茵河畔的固执</title>
+    <meta name="author" content="BillReus">
+    
+        <meta name="keywords" content="Redis,缓存,消息队列">
+    
+    
+        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
+    
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"Redis作为缓存和消息队列的问题总结。\n\nRedis缓存起因在高并发情况下，会使用redis作为缓存，而不是直接访问MySQL。一般流程为：\n\n判断缓存是否有数据，如果有直接调用，结束\n如果无数据，从数据库加载数据，并把数据写入缓存\n\n不管是先写数据库再删redis缓存，还是先删除缓存再更新数据库都可能出现数据不一致情况。例如：\n\n如果先写库，在删除缓存前，写库线程宕机了，没有删除缓存。\n如果先删除redis缓存，还没来得及写MySQL，另一个线程就来读取发现缓存为空，又去数据库读取数据写入缓存，此时缓存为脏数据。\n\n解决方案延时双删在写库前后都进行redis.del(key)操作，并且设定合理的超时时间。\n例如：\n\n先删除缓存\n写数据库\n休眠500ms\n再次删除缓存\n\n休眠时间根据redis和数据库主从同步的耗时决定，同时给缓存设置过期时间。\n异步更新读Redis（热点数据设定淘汰策略）+写MySQL+消息队列更新Redis\n缓存穿透请求去查询一条压根儿数据库中根本就不存在的数据，也就是缓存和数据库都查询不到这条数据，但是请求每次都会打到数据库上面去。有可能会产生大量的请求到数据库查询。\n解决方法\n缓存空值：把没有的key设置为null丢到缓存中\nBloomFilter：类似于一个hbase set 用来判断某个元素（key）是否存在于某个集合中。\n\n缓存击穿大量的请求同时查询一个 key 时，此时这个key正好失效了，就会导致大量的请求都打到数据库上面去。这种现象我们称为缓存击穿。\n解决办法上面的现象是多个线程同时去查询数据库的这条数据，那么我们可以在第一个查询数据的请求上使用一个 互斥锁来锁住它。\n其他的线程走到这一步拿不到锁就等着，等第一个线程查询到了数据，然后做缓存。后面的线程进来发现已经有缓存了，就直接走缓存。\n缓存雪崩缓存雪崩的情况是说，当某一时刻发生大规模的缓存失效的情况，比如你的缓存服务宕机了，会有大量的请求进来直接打到DB上面。结果就是DB 称不住，挂掉。\n解决办法\n使用集群缓存，保证缓存服务的高可用\nehcache本地缓存 + Hystrix限流&amp;降级,避免MySQL被打死\n开启Redis持久化机制，尽快恢复缓存集群\n\n热点数据集中失效我们在设置缓存的时候，一般会给缓存设置一个失效时间，过了这个时间，缓存就失效了。\nredis的热点数据淘汰策略有：\n\n已设置过期时间的数据中最少使用的数据\n已设置过期时间的数据中要过期的数据\n已设置过期时间的任意淘汰\n数据集中最少使用\n数据集中任意淘汰\n\n对于一些热点的数据来说，当缓存失效以后会存在大量的请求过来，然后打到数据库去，从而可能导致数据库崩溃的情况。\n解决办法\n设置不同的失效时间，比如在一个基础的时间上加上或者减去一个范围内的随机值。\n结合上面的击穿的情况，在第一个请求去查询数据库的时候对他加一个互斥锁，其余的查询请求都会被阻塞住，直到锁被释放，从而保护数据库。\n\nRedis消息队列redis作为消息队列并不可靠，尽量不要使用redis作为消息队列。\n存在问题：\n\n当消费者从消息队列中取出消息准备处理时，该服务器宕机，该消息就会丢失。\nredis本身宕机，消息持久化并不完全可靠。\n\nRabbitMQ对于问题1，RabbitMQ作为消息中间件可以关闭autoAck，此时当消息处理完毕会反馈给中间件一个ACK消息，\n对于问题2，RabbitMQ会对整个队列和消息进行持久化记录，但是不能保证100%写入。\nRedis分布式锁为了保证在分布式环境下多进程对于数据的一致性，需要使用分布式锁，目前常见有基于数据库、redis和zookeeper实现的分布式锁。\n实现思路锁的实现主要基于SETNX命令，当且仅当key不存在时，将key值设为value，若给定key已存在，SETNX不做任何动作。设置成功会返回1，失败返回0。\n同步锁流程：\n\n使用SETNX命令获取锁，若返回0（key已存在，锁已存在）则获取失败，反之获取成功\n为了防止获取锁后程序出现异常，导致其他线程/进程调用SETNX命令总是返回0而进入死锁状态，需要为该key设置一个“合理”的过期时间\n释放锁，使用DEL命令将锁数据删除\n\n图片来源2017年1月23日，斯里兰卡Matara，路边休息随手抓拍。\n","dateCreated":"2019-05-18T11:21:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-18T11:21:00+08:00","description":"Redis作为缓存和消息队列的问题总结。","headline":"Redis缓存和消息队列","image":["https://s2.ax1x.com/2019/05/18/EOaAcn.jpg","https://s2.ax1x.com/2019/05/18/EOZqAK.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/18/Redis一致性/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#about","/#search"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/18/Redis一致性/","keywords":"Redis","thumbnailUrl":"https://s2.ax1x.com/2019/05/18/EOaAcn.jpg"}</script>
+    <meta name="description" content="Redis作为缓存和消息队列的问题总结。">
+<meta name="keywords" content="Redis,缓存,消息队列">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="Redis缓存和消息队列">
+<meta property="og:url" content="/2019/05/18/Redis一致性/index.html">
+<meta property="og:site_name" content="莱茵河畔的固执">
+<meta property="og:description" content="Redis作为缓存和消息队列的问题总结。">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:updated_time" content="2019-10-28T12:15:53.403Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis缓存和消息队列">
+<meta name="twitter:description" content="Redis作为缓存和消息队列的问题总结。">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/18/EOaAcn.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/18/EOaAcn.jpg" />
+    
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/18/EOZqAK.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/18/EOZqAK.jpg" />
+    
+    
+    <!--STYLES-->
+    <link rel="stylesheet" href="/assets/css/style-c4ozcsklz4kht2pebhp44xorvyverh23toayhn7i6ubrpyedak24hv1v0hyd.min.css">
+    <!--STYLES END-->
+    
+
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a class="header-title-link" href="/ ">莱茵河畔的固执</a>
+    </div>
+    
+        
+            <a class="header-right-picture " href="#about">
+        
+        
+            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a href="/#about">
+                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+                </a>
+                <h4 class="sidebar-profile-name">BillReus</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>多特蒙德死忠</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/ " title="首页">
+                    
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首页</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-categories" title="分类">
+                    
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分类</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-tags" title="标签">
+                    
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">标签</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-archives" title="归档">
+                    
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">归档</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                    
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="#about" title="关于">
+                    
+                        <i class="sidebar-button-icon fa fa-user" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                    
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜索</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+        <div class="post-header-cover
+                    text-left
+                    " style="background-image:url('https://s2.ax1x.com/2019/05/18/EOZqAK.jpg');" data-behavior="4">
+            
+                <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            Redis缓存和消息队列
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2019-05-18T11:21:00+08:00">
+	
+		    5月 18, 2019
+    	
+    </time>
+    
+        <span>发布在 </span>
+        
+    <a class="category-link" href="/categories/Redis/">Redis</a>
+
+
+    
+</div>
+
+    
+</div>
+
+            
+        </div>
+
+            <div id="main" data-behavior="4"
+                 class="hasCover
+                        hasCoverMetaIn
+                        hasCoverCaption">
+                
+<article class="post">
+    
+        <span class="post-header-cover-caption caption">Pura Meduwe Karang神庙</span>
+    
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>Redis作为缓存和消息队列的问题总结。<br><a id="more"></a></p>
+<h1 id="table-of-contents">目录</h1><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Redis缓存"><span class="toc-text">Redis缓存</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#起因"><span class="toc-text">起因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#解决方案"><span class="toc-text">解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#延时双删"><span class="toc-text">延时双删</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#异步更新"><span class="toc-text">异步更新</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#缓存穿透"><span class="toc-text">缓存穿透</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方法"><span class="toc-text">解决方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#缓存击穿"><span class="toc-text">缓存击穿</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#解决办法"><span class="toc-text">解决办法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#缓存雪崩"><span class="toc-text">缓存雪崩</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#解决办法-1"><span class="toc-text">解决办法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#热点数据集中失效"><span class="toc-text">热点数据集中失效</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#解决办法-2"><span class="toc-text">解决办法</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Redis消息队列"><span class="toc-text">Redis消息队列</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#RabbitMQ"><span class="toc-text">RabbitMQ</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Redis分布式锁"><span class="toc-text">Redis分布式锁</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#实现思路"><span class="toc-text">实现思路</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#图片来源"><span class="toc-text">图片来源</span></a></li></ol>
+<h1 id="Redis缓存"><a href="#Redis缓存" class="headerlink" title="Redis缓存"></a>Redis缓存</h1><h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>在高并发情况下，会使用redis作为缓存，而不是直接访问MySQL。一般流程为：</p>
+<ol>
+<li>判断缓存是否有数据，如果有直接调用，结束</li>
+<li>如果无数据，从数据库加载数据，并把数据写入缓存</li>
+</ol>
+<p>不管是先写数据库再删redis缓存，还是先删除缓存再更新数据库都可能出现数据不一致情况。例如：</p>
+<ol>
+<li>如果先写库，在删除缓存前，写库线程宕机了，没有删除缓存。</li>
+<li>如果先删除redis缓存，还没来得及写MySQL，另一个线程就来读取发现缓存为空，又去数据库读取数据写入缓存，此时缓存为脏数据。</li>
+</ol>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="延时双删"><a href="#延时双删" class="headerlink" title="延时双删"></a>延时双删</h3><p>在写库前后都进行redis.del(key)操作，并且设定合理的超时时间。</p>
+<p>例如：</p>
+<ol>
+<li>先删除缓存</li>
+<li>写数据库</li>
+<li>休眠500ms</li>
+<li>再次删除缓存</li>
+</ol>
+<p>休眠时间根据redis和数据库主从同步的耗时决定，同时给缓存设置过期时间。</p>
+<h3 id="异步更新"><a href="#异步更新" class="headerlink" title="异步更新"></a>异步更新</h3><p>读Redis（热点数据设定淘汰策略）+写MySQL+消息队列更新Redis</p>
+<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>请求去查询一条压根儿数据库中根本就不存在的数据，也就是缓存和数据库都查询不到这条数据，但是请求每次都会打到数据库上面去。有可能会产生大量的请求到数据库查询。</p>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><ol>
+<li>缓存空值：把没有的key设置为null丢到缓存中</li>
+<li>BloomFilter：类似于一个hbase set 用来判断某个元素（key）是否存在于某个集合中。</li>
+</ol>
+<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>大量的请求同时查询一个 key 时，此时这个key正好失效了，就会导致大量的请求都打到数据库上面去。这种现象我们称为缓存击穿。</p>
+<h3 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h3><p>上面的现象是多个线程同时去查询数据库的这条数据，那么我们可以在第一个查询数据的请求上使用一个 互斥锁来锁住它。</p>
+<p>其他的线程走到这一步拿不到锁就等着，等第一个线程查询到了数据，然后做缓存。后面的线程进来发现已经有缓存了，就直接走缓存。</p>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩的情况是说，当某一时刻发生大规模的缓存失效的情况，比如你的缓存服务宕机了，会有大量的请求进来直接打到DB上面。结果就是DB 称不住，挂掉。</p>
+<h3 id="解决办法-1"><a href="#解决办法-1" class="headerlink" title="解决办法"></a>解决办法</h3><ol>
+<li>使用集群缓存，保证缓存服务的高可用</li>
+<li>ehcache本地缓存 + Hystrix限流&amp;降级,避免MySQL被打死</li>
+<li>开启Redis持久化机制，尽快恢复缓存集群</li>
+</ol>
+<h2 id="热点数据集中失效"><a href="#热点数据集中失效" class="headerlink" title="热点数据集中失效"></a>热点数据集中失效</h2><p>我们在设置缓存的时候，一般会给缓存设置一个失效时间，过了这个时间，缓存就失效了。</p>
+<p>redis的热点数据淘汰策略有：</p>
+<ol>
+<li>已设置过期时间的数据中最少使用的数据</li>
+<li>已设置过期时间的数据中要过期的数据</li>
+<li>已设置过期时间的任意淘汰</li>
+<li>数据集中最少使用</li>
+<li>数据集中任意淘汰</li>
+</ol>
+<p>对于一些热点的数据来说，当缓存失效以后会存在大量的请求过来，然后打到数据库去，从而可能导致数据库崩溃的情况。</p>
+<h3 id="解决办法-2"><a href="#解决办法-2" class="headerlink" title="解决办法"></a>解决办法</h3><ol>
+<li>设置不同的失效时间，比如在一个基础的时间上加上或者减去一个范围内的随机值。</li>
+<li>结合上面的击穿的情况，在第一个请求去查询数据库的时候对他加一个互斥锁，其余的查询请求都会被阻塞住，直到锁被释放，从而保护数据库。</li>
+</ol>
+<h1 id="Redis消息队列"><a href="#Redis消息队列" class="headerlink" title="Redis消息队列"></a>Redis消息队列</h1><p>redis作为消息队列并不可靠，尽量不要使用redis作为消息队列。</p>
+<p>存在问题：</p>
+<ol>
+<li>当消费者从消息队列中取出消息准备处理时，该服务器宕机，该消息就会丢失。</li>
+<li>redis本身宕机，消息持久化并不完全可靠。</li>
+</ol>
+<h2 id="RabbitMQ"><a href="#RabbitMQ" class="headerlink" title="RabbitMQ"></a>RabbitMQ</h2><p>对于问题1，RabbitMQ作为消息中间件可以关闭autoAck，此时当消息处理完毕会反馈给中间件一个ACK消息，</p>
+<p>对于问题2，RabbitMQ会对整个队列和消息进行持久化记录，但是不能保证100%写入。</p>
+<h1 id="Redis分布式锁"><a href="#Redis分布式锁" class="headerlink" title="Redis分布式锁"></a>Redis分布式锁</h1><p>为了保证在分布式环境下多进程对于数据的一致性，需要使用分布式锁，目前常见有基于数据库、redis和zookeeper实现的分布式锁。</p>
+<h2 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h2><p>锁的实现主要基于SETNX命令，当且仅当key不存在时，将key值设为value，若给定key已存在，SETNX不做任何动作。设置成功会返回1，失败返回0。</p>
+<p>同步锁流程：</p>
+<ol>
+<li>使用<code>SETNX</code>命令获取锁，若返回0（key已存在，锁已存在）则获取失败，反之获取成功</li>
+<li>为了防止获取锁后程序出现异常，导致其他线程/进程调用<code>SETNX</code>命令总是返回0而进入死锁状态，需要为该key设置一个“合理”的过期时间</li>
+<li>释放锁，使用<code>DEL</code>命令将锁数据删除</li>
+</ol>
+<h1 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h1><p>2017年1月23日，斯里兰卡Matara，路边休息随手抓拍。</p>
+
+            
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">标签</span><br>
+                
+    <a class="tag tag--primary tag--small t-link" href="/tags/Redis/">Redis</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/20/广场/" data-tooltip="广场" aria-label="上一篇: 广场">
+                
+                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="下一篇: Java8">
+                
+                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/18/Redis一致性/" title="分享到 Weibo">
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/18/Redis一致性/&amp;title=Redis缓存和消息队列" title="分享到 QQ">
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2019 BillReus. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/20/广场/" data-tooltip="广场" aria-label="上一篇: 广场">
+                
+                    <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                    <a class="post-action-btn btn btn--default tooltip--top" href="/2019/05/15/Java8/" data-tooltip="Java8" aria-label="下一篇: Java8">
+                
+                    <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                    <i class="fa fa-angle-right" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/18/Redis一致性/" title="分享到 Weibo">
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a class="post-action-btn btn btn--default" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/18/Redis一致性/&amp;title=Redis缓存和消息队列" title="分享到 QQ">
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="http://service.weibo.com/share/share.php?&amp;title=/2019/05/18/Redis一致性/">
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a class="share-option-btn" target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=/2019/05/18/Redis一致性/&amp;title=Redis缓存和消息队列">
+                        <i class="fab fa-qq" aria-hidden="true"></i><span>分享到 QQ</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
+            <h4 id="about-card-name">BillReus</h4>
+        
+            <div id="about-card-bio"><p>多特蒙德死忠</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br>
+                <p>等Offer</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br>
+                China
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
+        <!--SCRIPTS-->
+<script src="/assets/js/script-dbd16rvloemmuxdzniplmnxxvwoz24eya9wol0b7vvmlokgqsjivmb8dnscy.min.js"></script>
+<!--SCRIPTS END-->
+
+    
+
+
+
+    </body>
+</html>
