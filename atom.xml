@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="/"/>
-  <updated>2019-11-03T15:46:46.364Z</updated>
+  <updated>2019-11-04T16:04:05.200Z</updated>
   <id>/</id>
   
   <author>
@@ -15,6 +15,28 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>厦门的最后一个月</title>
+    <link href="/2019/11/04/%E5%8E%A6%E9%97%A8%E7%9A%84%E6%9C%80%E5%90%8E%E4%B8%80%E4%B8%AA%E6%9C%88/"/>
+    <id>/2019/11/04/厦门的最后一个月/</id>
+    <published>2019-11-04T13:31:51.000Z</published>
+    <updated>2019-11-04T16:04:05.200Z</updated>
+    
+    <content type="html"><![CDATA[<p>厦门的最后一个月</p><a id="more"></a><!-- toc --><h1 id="十一"><a href="#十一" class="headerlink" title="十一"></a>十一</h1><p>来厦门已有四个月，从陌生到熟悉，从紧张焦虑的复习到现在的懒散。月底要回南京开始最后半年的学生时光了，想慢慢度过这最后的闲暇时光，每天规划着时间，想着学习什么，到最后一天大部分时间都挥霍在了无所事事的发呆玩手机上。</p><h1 id="工作"><a href="#工作" class="headerlink" title="工作"></a>工作</h1><p>找工作也犯了找实习时候的老毛病，觉得自己没准备好，一直没投。等到九月初了才开始，导致自己笔试做了不少，面试却都在十月份，也让自己焦虑了一段时间。其次就是自己对于算法还是没理解透彻，有种仍在刷题的感觉，面试一紧张又不能长时间慢慢分析，很容易就想不起来了。</p><p>经历了一些线上面试，第一个线下面试就算VIVO和招银，VIVO也算幸运吧，正好在厦门面的也没多少人，当晚就给了offer，有时候就是这么突然，本来难受了一天的心脏也舒服了很多。第二天面完招银，虽然流程都走完了可是还是没给捞起来，略微有点可惜吧。</p><p>本来想着后面比vivo好的公司也没什么了，差不多就可以签卖身契了，突如其来的网易乎娱却给了面试。笔试就ac了一题也给了机会自己都有点懵，由于那边技术栈是C++和py自己是Java导致手撕了一个多小时算法，不过却是自己感觉最好的一次。</p><p>虽然后面也给了二面，但是考虑游戏行业后面发展很窄，自己也不想重新学C++，即使公司薪水地点都很诱人，还是放弃了。</p><h1 id="规划"><a href="#规划" class="headerlink" title="规划"></a>规划</h1><p>之前自己也写了规划，但是那时候没想到自己会从后台转向安卓，之后mbp也放弃了，投奔了败家之眼。所以就重新改变一些计划</p><p>编程方面，自己主要以下几个方面：</p><ol><li>概念提炼和记忆，基于之前的笔记</li><li>JavaDemo主要写一下概念方面的小demo</li><li>SpringBootStudy主要把每个功能分模块一个个写写</li><li>JDK源码</li><li>学习安卓，看官方文档和书</li><li>并发和JVM书</li><li>学习前端和爬虫</li></ol>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;厦门的最后一个月&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="日记" scheme="/categories/%E6%97%A5%E8%AE%B0/"/>
+    
+    
+      <category term="随笔" scheme="/tags/%E9%9A%8F%E7%AC%94/"/>
+    
+  </entry>
   
   <entry>
     <title>暑假</title>

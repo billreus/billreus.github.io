@@ -12,10 +12,12 @@
         <meta name="keywords" content="Java8">
     
     
+        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
+    
     
         <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/","http://stackoverflow.com/users","https://twitter.com/","https://facebook.com/","https://plus.google.com/","https://www.linkedin.com/profile/","mailto"]},"articleBody":"Java8特性\n\nLambda表达式Lambda表达式也称为闭包，允许把函数作为一个方法的参数。\n语法格式如下：\n12345(parameters) -&gt; expression(parameters -&gt; &#123;\tstatements;\tstatements1;\t&#125;);\n常用于返回参数：\n1234567891011//返回5() -&gt; 5    //返回一个参数的两倍x -&gt; 2*x//返回两个参数的差值(x, y) -&gt; x-y//接收一个对象，打印(String s) -&gt; System.out.print(s)\n用于重写方法（匿名类）：\n1234567891011121314// 使用 java 7 排序private void sortUsingJava7(List&lt;String&gt; names)&#123;      Collections.sort(names, new Comparator&lt;String&gt;() &#123;      @Override      public int compare(String s1, String s2) &#123;         return s1.compareTo(s2);      &#125;   &#125;);&#125;   // 使用 java 8 排序private void sortUsingJava8(List&lt;String&gt; names)&#123;   Collections.sort(names, (s1, s2) -&gt; s1.compareTo(s2));&#125;\n用于代替匿名类创建线程：\n12345678910111213141516171819202122232425262728//实现Runnable接口public class MyRunnable implements Runnable &#123;    public void run() &#123;        // ...    &#125;&#125;public static void main(String[] args) &#123;    MyRunnable instance = new MyRunnable();    Thread thread = new Thread(instance);    thread.start();&#125;//等价于public static void main(String[] args)&#123;    new Thread(new Runnable()&#123;        @Override        public void run()&#123;            //...        &#125;    &#125;).start();&#125;//Java8public static void main(String[] args)&#123;    new Thread(() -&gt; &#123;        //...    &#125;).start();&#125;\n方法引用通常使用lambda表达式创建匿名方法，有时我们只调用一个已存在的方法，可以使用方法引用来简写\n12Arrays.sort(stringsArray,(s1,s2)-&gt;s1.compareToIgnoreCase(s2));Arrays.sort(stringsArray, String::compareToIgnoreCase);\n图片来源17年1月21日9点30分，斯里兰卡皇家植物园，中间黑点是我= =\n","dateCreated":"2019-05-15T14:53:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-15T14:53:00+08:00","description":"Java8特性","headline":"Java8","image":["https://s2.ax1x.com/2019/05/15/ET5e9f.jpg","https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/15/Java8/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/","http://stackoverflow.com/users","https://twitter.com/","https://facebook.com/","https://plus.google.com/","https://www.linkedin.com/profile/","mailto"]},"url":"/2019/05/15/Java8/","keywords":"Java","thumbnailUrl":"https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"Java8特性\n\nLambda表达式Lambda表达式也称为闭包，允许把函数作为一个方法的参数。\n语法格式如下：\n12345(parameters) -&gt; expression(parameters -&gt; &#123;\tstatements;\tstatements1;\t&#125;);\n常用于返回参数：\n1234567891011//返回5() -&gt; 5    //返回一个参数的两倍x -&gt; 2*x//返回两个参数的差值(x, y) -&gt; x-y//接收一个对象，打印(String s) -&gt; System.out.print(s)\n用于重写方法（匿名类）：\n1234567891011121314// 使用 java 7 排序private void sortUsingJava7(List&lt;String&gt; names)&#123;      Collections.sort(names, new Comparator&lt;String&gt;() &#123;      @Override      public int compare(String s1, String s2) &#123;         return s1.compareTo(s2);      &#125;   &#125;);&#125;   // 使用 java 8 排序private void sortUsingJava8(List&lt;String&gt; names)&#123;   Collections.sort(names, (s1, s2) -&gt; s1.compareTo(s2));&#125;\n用于代替匿名类创建线程：\n12345678910111213141516171819202122232425262728//实现Runnable接口public class MyRunnable implements Runnable &#123;    public void run() &#123;        // ...    &#125;&#125;public static void main(String[] args) &#123;    MyRunnable instance = new MyRunnable();    Thread thread = new Thread(instance);    thread.start();&#125;//等价于public static void main(String[] args)&#123;    new Thread(new Runnable()&#123;        @Override        public void run()&#123;            //...        &#125;    &#125;).start();&#125;//Java8public static void main(String[] args)&#123;    new Thread(() -&gt; &#123;        //...    &#125;).start();&#125;\n方法引用通常使用lambda表达式创建匿名方法，有时我们只调用一个已存在的方法，可以使用方法引用来简写\n12Arrays.sort(stringsArray,(s1,s2)-&gt;s1.compareToIgnoreCase(s2));Arrays.sort(stringsArray, String::compareToIgnoreCase);\n图片来源17年1月21日9点30分，斯里兰卡皇家植物园，中间黑点是我= =\n","dateCreated":"2019-05-15T14:53:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-15T14:53:00+08:00","description":"Java8特性","headline":"Java8","image":["https://s2.ax1x.com/2019/05/15/ET5e9f.jpg","https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/15/Java8/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/15/Java8/","keywords":"Java","thumbnailUrl":"https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"}</script>
     <meta name="description" content="Java8特性">
 <meta name="keywords" content="Java8">
 <meta property="og:type" content="blog">
@@ -32,6 +34,8 @@
     
         
     
+    
+        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
     
     
         <meta property="og:image" content="https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"/>
@@ -60,6 +64,10 @@
 
 
     
+        
+            
+        
+    
 
 <header id="header" data-behavior="4">
     <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
@@ -73,6 +81,8 @@
             <a class="header-right-picture " href="#about" aria-label="打开链接: /#about">
         
         
+            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+        
         </a>
     
 </header>
@@ -80,8 +90,23 @@
             <!-- Define author's picture -->
 
 
+
+        
+    
+
 <nav id="sidebar" data-behavior="4">
     <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a href="/#about" aria-label="阅读有关作者的更多信息">
+                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+                </a>
+                <h4 class="sidebar-profile-name">BillReus</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>author.bio</p>
+</h5>
+                
+            </div>
         
         
             <ul class="sidebar-buttons">
@@ -122,6 +147,19 @@
                     </a>
             </li>
             
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                    
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
                 <li class="sidebar-button">
                     
                         <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
@@ -137,86 +175,6 @@
                     
                         <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
                         <span class="sidebar-button-desc">关于</span>
-                    </a>
-            </li>
-            
-        </ul>
-        
-            <ul class="sidebar-buttons">
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="https://github.com/" title="GitHub">
-                    
-                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">GitHub</span>
-                    </a>
-            </li>
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="http://stackoverflow.com/users" title="Stack Overflow">
-                    
-                        <i class="sidebar-button-icon fab fa-stack-overflow" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">Stack Overflow</span>
-                    </a>
-            </li>
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="https://twitter.com/" title="Twitter">
-                    
-                        <i class="sidebar-button-icon fab fa-twitter" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">Twitter</span>
-                    </a>
-            </li>
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="https://facebook.com/" title="Facebook">
-                    
-                        <i class="sidebar-button-icon fab fa-facebook" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">Facebook</span>
-                    </a>
-            </li>
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="https://plus.google.com/" title="Google Plus">
-                    
-                        <i class="sidebar-button-icon fab fa-google-plus" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">Google Plus</span>
-                    </a>
-            </li>
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="https://www.linkedin.com/profile/" title="LinkedIn">
-                    
-                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">LinkedIn</span>
-                    </a>
-            </li>
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="/mailto" title="邮箱">
-                    
-                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">邮箱</span>
-                    </a>
-            </li>
-            
-        </ul>
-        
-            <ul class="sidebar-buttons">
-            
-                <li class="sidebar-button">
-                    
-                        <a class="sidebar-button-link " href="/atom.xml" title="RSS">
-                    
-                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
-                        <span class="sidebar-button-desc">RSS</span>
                     </a>
             </li>
             
@@ -330,30 +288,6 @@
             </a>
         </li>
         
-            
-            
-            <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/15/Java8/" title="分享到 Facebook" aria-label="分享到 Facebook">
-                    <i class="fab fa-facebook" aria-hidden="true"></i>
-                </a>
-            </li>
-        
-            
-            
-            <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/15/Java8/" title="分享到 Twitter" aria-label="分享到 Twitter">
-                    <i class="fab fa-twitter" aria-hidden="true"></i>
-                </a>
-            </li>
-        
-            
-            
-            <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=/2019/05/15/Java8/" title="分享到 Google+" aria-label="分享到 Google+">
-                    <i class="fab fa-google-plus" aria-hidden="true"></i>
-                </a>
-            </li>
-        
         
             
         
@@ -416,30 +350,6 @@
             </a>
         </li>
         
-            
-            
-            <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/15/Java8/" title="分享到 Facebook" aria-label="分享到 Facebook">
-                    <i class="fab fa-facebook" aria-hidden="true"></i>
-                </a>
-            </li>
-        
-            
-            
-            <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/15/Java8/" title="分享到 Twitter" aria-label="分享到 Twitter">
-                    <i class="fab fa-twitter" aria-hidden="true"></i>
-                </a>
-            </li>
-        
-            
-            
-            <li class="post-action hide-xs">
-                <a class="post-action-btn btn btn--default" target="new" href="https://plus.google.com/share?url=/2019/05/15/Java8/" title="分享到 Google+" aria-label="分享到 Google+">
-                    <i class="fab fa-google-plus" aria-hidden="true"></i>
-                </a>
-            </li>
-        
         
             
         
@@ -456,48 +366,23 @@
 
                 </div>
                 
-    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
-        <i id="btn-close-shareoptions" class="fa fa-times"></i>
-        <ul class="share-options">
-            
-                
-                
-                <li class="share-option">
-                    <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=/2019/05/15/Java8/" aria-label="分享到 Facebook">
-                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
-                    </a>
-                </li>
-            
-                
-                
-                <li class="share-option">
-                    <a class="share-option-btn" target="new" href="https://twitter.com/intent/tweet?text=/2019/05/15/Java8/" aria-label="分享到 Twitter">
-                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
-                    </a>
-                </li>
-            
-                
-                
-                <li class="share-option">
-                    <a class="share-option-btn" target="new" href="https://plus.google.com/share?url=/2019/05/15/Java8/" aria-label="分享到 Google+">
-                        <i class="fab fa-google-plus" aria-hidden="true"></i><span>分享到 Google+</span>
-                    </a>
-                </li>
-            
-        </ul>
-    </div>
-
 
             
         </div>
         
 
 
+    
+        
+    
+
 <div id="about">
     <div id="about-card">
         <div id="about-btn-close">
             <i class="fa fa-times"></i>
         </div>
+        
+            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
         
             <h4 id="about-card-name">BillReus</h4>
         
@@ -513,12 +398,18 @@
             </div>
         
         
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br>
+                China
+            </div>
+        
     </div>
 </div>
 
         
         
-<div id="cover" style="background-image:url('/assets/images/cover.jpg');"></div>
+<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
         <!--SCRIPTS-->
 <script src="/assets/js/script-iupfu4cvozqvsi1hhazhbob6uip1kfivmhmcidsf0ja5ike2vagngtevm6j3.min.js"></script>
 <!--SCRIPTS END-->
