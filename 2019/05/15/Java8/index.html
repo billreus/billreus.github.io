@@ -12,12 +12,12 @@
         <meta name="keywords" content="Java8">
     
     
-        <link rel="icon" href="https://s2.ax1x.com/2019/05/20/ExX4hR.jpg">
+        <link rel="icon" href="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/正恩.jpg?x-oss-process=image/resize,l_40,w_40">
     
     
         <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"},"articleBody":"Java8特性\n\nLambda表达式Lambda表达式也称为闭包，允许把函数作为一个方法的参数。\n语法格式如下：\n12345(parameters) -&gt; expression(parameters -&gt; &#123;\tstatements;\tstatements1;\t&#125;);\n常用于返回参数：\n1234567891011//返回5() -&gt; 5    //返回一个参数的两倍x -&gt; 2*x//返回两个参数的差值(x, y) -&gt; x-y//接收一个对象，打印(String s) -&gt; System.out.print(s)\n用于重写方法（匿名类）：\n1234567891011121314// 使用 java 7 排序private void sortUsingJava7(List&lt;String&gt; names)&#123;      Collections.sort(names, new Comparator&lt;String&gt;() &#123;      @Override      public int compare(String s1, String s2) &#123;         return s1.compareTo(s2);      &#125;   &#125;);&#125;   // 使用 java 8 排序private void sortUsingJava8(List&lt;String&gt; names)&#123;   Collections.sort(names, (s1, s2) -&gt; s1.compareTo(s2));&#125;\n用于代替匿名类创建线程：\n12345678910111213141516171819202122232425262728//实现Runnable接口public class MyRunnable implements Runnable &#123;    public void run() &#123;        // ...    &#125;&#125;public static void main(String[] args) &#123;    MyRunnable instance = new MyRunnable();    Thread thread = new Thread(instance);    thread.start();&#125;//等价于public static void main(String[] args)&#123;    new Thread(new Runnable()&#123;        @Override        public void run()&#123;            //...        &#125;    &#125;).start();&#125;//Java8public static void main(String[] args)&#123;    new Thread(() -&gt; &#123;        //...    &#125;).start();&#125;\n方法引用通常使用lambda表达式创建匿名方法，有时我们只调用一个已存在的方法，可以使用方法引用来简写\n12Arrays.sort(stringsArray,(s1,s2)-&gt;s1.compareToIgnoreCase(s2));Arrays.sort(stringsArray, String::compareToIgnoreCase);\n图片来源17年1月21日9点30分，斯里兰卡皇家植物园，中间黑点是我= =\n","dateCreated":"2019-05-15T14:53:00+08:00","dateModified":"2019-10-28T20:15:53+08:00","datePublished":"2019-05-15T14:53:00+08:00","description":"Java8特性","headline":"Java8","image":["https://s2.ax1x.com/2019/05/15/ET5e9f.jpg","https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/15/Java8/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg","logo":{"@type":"ImageObject","url":"https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"}},"url":"/2019/05/15/Java8/","keywords":"Java","thumbnailUrl":"https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90"},"articleBody":"Java8特性\n\nLambda表达式Lambda表达式也称为闭包，允许把函数作为一个方法的参数。\n语法格式如下：\n12345(parameters) -&gt; expression(parameters -&gt; &#123;\tstatements;\tstatements1;\t&#125;);\n常用于返回参数：\n1234567891011//返回5() -&gt; 5    //返回一个参数的两倍x -&gt; 2*x//返回两个参数的差值(x, y) -&gt; x-y//接收一个对象，打印(String s) -&gt; System.out.print(s)\n用于重写方法（匿名类）：\n1234567891011121314// 使用 java 7 排序private void sortUsingJava7(List&lt;String&gt; names)&#123;      Collections.sort(names, new Comparator&lt;String&gt;() &#123;      @Override      public int compare(String s1, String s2) &#123;         return s1.compareTo(s2);      &#125;   &#125;);&#125;   // 使用 java 8 排序private void sortUsingJava8(List&lt;String&gt; names)&#123;   Collections.sort(names, (s1, s2) -&gt; s1.compareTo(s2));&#125;\n用于代替匿名类创建线程：\n12345678910111213141516171819202122232425262728//实现Runnable接口public class MyRunnable implements Runnable &#123;    public void run() &#123;        // ...    &#125;&#125;public static void main(String[] args) &#123;    MyRunnable instance = new MyRunnable();    Thread thread = new Thread(instance);    thread.start();&#125;//等价于public static void main(String[] args)&#123;    new Thread(new Runnable()&#123;        @Override        public void run()&#123;            //...        &#125;    &#125;).start();&#125;//Java8public static void main(String[] args)&#123;    new Thread(() -&gt; &#123;        //...    &#125;).start();&#125;\n方法引用通常使用lambda表达式创建匿名方法，有时我们只调用一个已存在的方法，可以使用方法引用来简写\n12Arrays.sort(stringsArray,(s1,s2)-&gt;s1.compareToIgnoreCase(s2));Arrays.sort(stringsArray, String::compareToIgnoreCase);\n图片来源17年1月21日9点30分，斯里兰卡皇家植物园，中间黑点是我= =\n","dateCreated":"2019-05-15T14:53:00+08:00","dateModified":"2020-02-16T15:54:06+08:00","datePublished":"2019-05-15T14:53:00+08:00","description":"Java8特性","headline":"Java8","image":["https://picccc.oss-cn-shenzhen.aliyuncs.com/img/植物园.jpg?x-oss-process=image/resize,l_140,w_140","https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2019/05/15/Java8/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90","logo":{"@type":"ImageObject","url":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90"}},"url":"/2019/05/15/Java8/","keywords":"Java","thumbnailUrl":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/植物园.jpg?x-oss-process=image/resize,l_140,w_140"}</script>
     <meta name="description" content="Java8特性">
 <meta name="keywords" content="Java8">
 <meta property="og:type" content="blog">
@@ -26,7 +26,7 @@
 <meta property="og:site_name" content="莱茵河畔的固执">
 <meta property="og:description" content="Java8特性">
 <meta property="og:locale" content="zh-cn">
-<meta property="og:updated_time" content="2019-10-28T12:15:53.402Z">
+<meta property="og:updated_time" content="2020-02-16T07:54:06.485Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java8">
 <meta name="twitter:description" content="Java8特性">
@@ -35,11 +35,11 @@
         
     
     
-        <meta property="og:image" content="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg"/>
+        <meta property="og:image" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90"/>
     
     
-        <meta property="og:image" content="https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"/>
-        <meta class="swiftype" name="image" data-type="enum" content="https://s2.ax1x.com/2019/05/15/ET5e9f.jpg"/>
+        <meta property="og:image" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/植物园.jpg?x-oss-process=image/resize,l_140,w_140"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/植物园.jpg?x-oss-process=image/resize,l_140,w_140"/>
     
     
         <meta property="og:image" content="https://s2.ax1x.com/2019/05/15/ET4qB9.jpg"/>
@@ -81,7 +81,7 @@
             <a class="header-right-picture " href="#about" aria-label="打开链接: /#about">
         
         
-            <img class="header-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+            <img class="header-picture" src="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90" alt="作者的图片">
         
         </a>
     
@@ -99,7 +99,7 @@
         
             <div class="sidebar-profile">
                 <a href="/#about" aria-label="阅读有关作者的更多信息">
-                    <img class="sidebar-profile-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+                    <img class="sidebar-profile-picture" src="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90" alt="作者的图片">
                 </a>
                 <h4 class="sidebar-profile-name">BillReus</h4>
                 
@@ -382,7 +382,7 @@
             <i class="fa fa-times"></i>
         </div>
         
-            <img id="about-card-picture" src="https://s2.ax1x.com/2019/05/20/ExO9PI.jpg" alt="作者的图片">
+            <img id="about-card-picture" src="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90" alt="作者的图片">
         
             <h4 id="about-card-name">BillReus</h4>
         
@@ -409,7 +409,7 @@
 
         
         
-<div id="cover" style="background-image:url('https://s2.ax1x.com/2019/05/20/ExOvlV.jpg');"></div>
+<div id="cover" style="background-image:url('https://picccc.oss-cn-shenzhen.aliyuncs.com/img/背景.jpg?x-oss-process=image/resize,l_730,w_500');"></div>
         <!--SCRIPTS-->
 <script src="/assets/js/script-iupfu4cvozqvsi1hhazhbob6uip1kfivmhmcidsf0ja5ike2vagngtevm6j3.min.js"></script>
 <!--SCRIPTS END-->
