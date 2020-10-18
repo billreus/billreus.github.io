@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="/"/>
-  <updated>2020-02-16T07:03:34.489Z</updated>
+  <updated>2020-10-18T12:24:21.896Z</updated>
   <id>/</id>
   
   <author>
@@ -15,6 +15,28 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>国庆有感</title>
+    <link href="/2020/10/06/%E5%B7%A5%E4%BD%9C%E5%90%8E%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%81%87%E6%9C%9F/"/>
+    <id>/2020/10/06/工作后的第一个假期/</id>
+    <published>2020-10-06T15:02:51.000Z</published>
+    <updated>2020-10-18T12:24:21.896Z</updated>
+    
+    <content type="html"><![CDATA[<p>2020工作后第一次回家</p><a id="more"></a><!-- toc --><h1 id="国庆"><a href="#国庆" class="headerlink" title="国庆"></a>国庆</h1><p>第一次感觉国庆的假期是这么短暂，仿佛回家还没睡够还没出过门还没休息几天，就这么结束了。明天早晨就得回深圳了，脑袋里的记忆却还停留在10.1回来那天，假期是短暂的，时间在假期里是没有度量的，沉浸在假期毫无感知，假期结束恍然感受到工作后时间的节奏，一天接着一天，紧凑规律感受不到时间却又流失的很快。<br>自己回到深圳按部就班的生活工作起来，回想假期又觉得自己没做好，没有利用好时间，没把更多的时间花在需要的地方，只能在后面的假期好好改善。</p><h1 id="深圳"><a href="#深圳" class="headerlink" title="深圳"></a>深圳</h1><p>来深圳已经三个月了，一个最几年快速发展的城市，高楼大厦、各地美食、温暖的秋冬，但也是一个除了商场、爬山、公园没有地方可以去玩的地方。适合工作却不适合生活，每天感觉到的都是工作的气息，市井的氛围似乎没有，把整个深圳看了一遍也没发现很多有意思可去的地方。不过最近却有些在家宅着做饮料和做吃的的兴趣。</p><h1 id="工作"><a href="#工作" class="headerlink" title="工作"></a>工作</h1><p>时间过得真快，看着和自己一起入职的98年小弟，看着自己大学已经毕业三年，想着读研三年飞快的时光，想着大学时的种种，回过神来只能感慨，高中大学真的离自己已经是很久以前了。</p><p>工作的节奏很快，五六天上班，一两天睡觉打游戏陪人出去玩，周而复始。不过现在相对于互联网的敏捷开发，压力还是小不少，不过接下来需要跟项目了，任务和压力会随之而来。</p><p>静下来的时候觉得时间安排的很满，却没有停下来思考过什么。感觉得留一些时间给自己总结反思，不然自己就像一个机器，也无法提高自己也无法有个明确的目标也无法知道应该怎么生活。所以最近研究起理财如何反思，平时记一些小灵感，每天记录一下待办记事。</p><h1 id="规划"><a href="#规划" class="headerlink" title="规划"></a>规划</h1><p>规划主要分为三个部分</p><p>记录</p><ol><li>本周计划列表</li><li>新发现，新思考</li><li>中长期计划：年度季度月度</li></ol><p>回顾</p><ol><li>复盘</li><li>评估计划</li></ol><p>编排</p><p>分配任务：同一天安排类似，把一定要完成的事情安排在效率最高不被打扰的时段</p><h1 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h1><p>2017年04月1日，长沙小龙虾。</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;2020工作后第一次回家&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="日记" scheme="/categories/%E6%97%A5%E8%AE%B0/"/>
+    
+    
+      <category term="随笔" scheme="/tags/%E9%9A%8F%E7%AC%94/"/>
+    
+  </entry>
   
   <entry>
     <title>寒假中</title>
@@ -285,9 +307,9 @@
     <link href="/2019/04/29/hexo/"/>
     <id>/2019/04/29/hexo/</id>
     <published>2019-04-29T14:17:00.000Z</published>
-    <updated>2020-02-16T07:57:38.416Z</updated>
+    <updated>2020-10-18T12:20:34.351Z</updated>
     
-    <content type="html"><![CDATA[<p>总结搭建过程中遇到的Hexo常用命令<br><a id="more"></a></p><!-- toc --><h2 id="操作命令"><a href="#操作命令" class="headerlink" title="操作命令"></a>操作命令</h2><p>hexo s</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">运行项目</span><br></pre></td></tr></table></figure><p>编译项目</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure><p>推送项目</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo d</span><br></pre></td></tr></table></figure><p>清除缓存</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br></pre></td></tr></table></figure><p>上传七牛云</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo qiniu s</span><br></pre></td></tr></table></figure><h2 id="写文章"><a href="#写文章" class="headerlink" title="写文章"></a>写文章</h2><p>新建文章<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new &quot;xxx&quot;</span><br></pre></td></tr></table></figure></p><p>文章内的配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">title: 标题</span><br><span class="line">date: 日期</span><br><span class="line">tags:</span><br><span class="line">    - 标签</span><br><span class="line">keywords:</span><br><span class="line">- 关键字</span><br><span class="line">clearReading: true</span><br><span class="line">thumbnailImagePosition: 首页文字图片位置</span><br><span class="line">thumbnailImage: 首页图片</span><br><span class="line">metaAlignment：文章标题位置(center,left,right)</span><br><span class="line">coverImage: 文章内图片</span><br><span class="line">coverCaption: &quot;文章内图片说明&quot;</span><br></pre></td></tr></table></figure></p><p>文章概览和目录</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- more --&gt;</span><br><span class="line">&lt;!-- toc --&gt;</span><br></pre></td></tr></table></figure><h2 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h2><p>16年12月4日7点40分，天津早晨的大雾，伸手不见五指，去考研自习室路上所拍。</p>]]></content>
+    <content type="html"><![CDATA[<p>总结搭建过程中遇到的Hexo常用命令<br><a id="more"></a></p><!-- toc --><h2 id="操作命令"><a href="#操作命令" class="headerlink" title="操作命令"></a>操作命令</h2><p>运行项目</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure><p>编译项目</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure><p>推送项目</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo d</span><br></pre></td></tr></table></figure><p>清除缓存</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br></pre></td></tr></table></figure><p>上传七牛云</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo qiniu s</span><br></pre></td></tr></table></figure><h2 id="写文章"><a href="#写文章" class="headerlink" title="写文章"></a>写文章</h2><p>新建文章<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new &quot;xxx&quot;</span><br></pre></td></tr></table></figure></p><p>文章内的配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">title: 标题</span><br><span class="line">date: 日期</span><br><span class="line">tags:</span><br><span class="line">    - 标签</span><br><span class="line">keywords:</span><br><span class="line">- 关键字</span><br><span class="line">clearReading: true</span><br><span class="line">thumbnailImagePosition: 首页文字图片位置</span><br><span class="line">thumbnailImage: 首页图片</span><br><span class="line">metaAlignment：文章标题位置(center,left,right)</span><br><span class="line">coverImage: 文章内图片</span><br><span class="line">coverCaption: &quot;文章内图片说明&quot;</span><br></pre></td></tr></table></figure></p><p>文章概览和目录</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- more --&gt;</span><br><span class="line">&lt;!-- toc --&gt;</span><br></pre></td></tr></table></figure><h2 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h2><p>16年12月4日7点40分，天津早晨的大雾，伸手不见五指，去考研自习室路上所拍。</p>]]></content>
     
     <summary type="html">
     
