@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="莱茵河畔的固执">
+    <title>Trace耗时修改的思考 - 莱茵河畔的固执</title>
+    <meta name="author" content="BillReus">
+    
+        <meta name="keywords" content="trace,耗时,Android">
+    
+    
+        <link rel="icon" href="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/正恩.jpg?x-oss-process=image/resize,l_40,w_40">
+    
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90"},"articleBody":"一日在修改Trace的tag，被告知有耗时问题，对应源码有类似实现，从而引发的思考。\n\n\nOomAdjuster在OomAdjuster函数中有这样一段代码（其中不涉及代码已省略）：12345678910111213141516171819202122232425262728293031OomAdjuster(ActivityManagerService service, ProcessList processList, ActiveUids activeUids,        ServiceThread adjusterThread) &#123;        ....    mProcessGroupHandler = new Handler(adjusterThread.getLooper(), msg -&gt; &#123;        final int pid = msg.arg1;        final int group = msg.arg2;        if (pid == ActivityManagerService.MY_PID) &#123;            // Skip setting the process group for system_server, keep it as default.            return true;        &#125;        if (Trace.isTagEnabled(Trace.TRACE_TAG_ACTIVITY_MANAGER)) &#123;            Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, \"setProcessGroup \"                    + msg.obj + \" to \" + group);        &#125;        try &#123;            setProcessGroup(pid, group);        &#125; catch (Exception e) &#123;            if (DEBUG_ALL) &#123;                Slog.w(TAG, \"Failed setting process group of \" + pid + \" to \" + group, e);            &#125;        &#125; finally &#123;            Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);        &#125;        return true;    &#125;);        ....          &#125;\n该方法主要是在oomadj中计算好该进程的CPU分组后会发送消息给该handler进行CPU分组的操作，其中会打上trace方便分析耗时问题。\n这里提出两个问题：\n1. traceEnd在finally中，而traceBegin在if判断中，这种方式合适吗？\n2. traceBegin的方法中也会调用isTagEnabled为什么还要判断一次，是否多余？\nTrace针对第一个问题，由于trace是根据tag来start和end，而系统一共就几种tag，所以为了保证start和end对称，最好是统一条件。\n\n我们在trace中偶尔会看到一些did not finish的trace就是因为异常导致start和end未对称\n\n针对第二个问题，首先笼统的回答一下原因，那就是避免不必要的字符拼接，因为即使有isTagEnabled在false情况下还是会拼接后面的字符，而简单的拼接字符是一件耗时的操作，为了避免性能的损失最好把有字符串拼接且会频繁调用的trace添加上判断条件。\n12345678boolean enable = Trace.isTagEnabled(Trace.TRACE_TAG_ACTIVITY_MANAGER);if (enable) &#123;\tTrace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, \"setProcessGroup \" + msg.obj + \" to \" + group);&#125;    ....if (enable) &#123;\tTrace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER)&#125;\n字符拼接好了，我们知道如此操作的原因是字符拼接耗时，那么Java中字符拼接有几种？有多耗时呢？\n1234567891011// 方式1String s = \"Hello\";s += \"Hello\";// 方式2StringBuilder stringBuilder = new StringBuilder(\"Hello\");stringBuilder.append(\"Hello\");// 方式3StringBuffer stringBuffer = new StringBuffer(\"Hello\");stringBuffer.append(\"Hello\");\n常用的拼接字符的方式有三种，在pc段运行的话会发现，如果不停的循环new再赋值这种情况下耗死彬没有太大差异，更多的差异是在拼接长字符的情况下。而在Android端由于和pc端由于性能和调用时的逻辑差异，所以避免拼接字符耗时，下面仅讨论拼接字符原理和耗时原因。\n12345678910111213141516171819202122232425262728293031public class StringTest &#123;    public static void main(String[] args) &#123;        long begin1 = System.currentTimeMillis();        String s = \"test\";        for (int i = 1; i &lt; 10000; i++) &#123;            s += \" build\";        &#125;        long end1 = System.currentTimeMillis();        System.out.println(\"耗时测试1：\" + (end1-begin1));        long begin2 = System.currentTimeMillis();        StringBuilder stringBuilder = new StringBuilder(\"test\");        for (int i = 1; i &lt; 10000; i++) &#123;            stringBuilder.append(\" build\");        &#125;        long end2 = System.currentTimeMillis();        System.out.println(\"耗时测试2：\" + (end2-begin2));        long begin3 = System.currentTimeMillis();        StringBuffer stringBuffer = new StringBuffer(\"test\");        for (int i = 1; i &lt; 10000; i++) &#123;            stringBuffer.append(\" build\");        &#125;        long end3 = System.currentTimeMillis();        System.out.println(\"耗时测试3：\" + (end3-begin3));    &#125;&#125;// 耗时测试1：619// 耗时测试2：0// 耗时测试3：1\nStringBuilder.append()拼接1234567891011121314151617181920212223242526272829303132333435// StringBuilder.javapublic final class StringBuilder    extends AbstractStringBuilder    implements java.io.Serializable, CharSequence    @Override    public StringBuilder append(String str) &#123;        super.append(str);        return this;    &#125;    //AbstractStringBuilder.javapublic AbstractStringBuilder append(String str) &#123;        if (str == null)            return appendNull();        int len = str.length();        ensureCapacityInternal(count + len);        str.getChars(0, len, value, count);        count += len;        return this;    &#125;    // String.javapublic void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) &#123;        if (srcBegin &lt; 0) &#123;            throw new StringIndexOutOfBoundsException(srcBegin);        &#125;        if (srcEnd &gt; value.length) &#123;            throw new StringIndexOutOfBoundsException(srcEnd);        &#125;        if (srcBegin &gt; srcEnd) &#123;            throw new StringIndexOutOfBoundsException(srcEnd - srcBegin);        &#125;        System.arraycopy(value, srcBegin, dst, dstBegin, srcEnd - srcBegin);    &#125;\nStringBuilder.append()拼接12345678910public final class StringBuffer    extends AbstractStringBuilder    implements java.io.Serializable, CharSequence@Overridepublic synchronized StringBuffer append(String str) &#123;    toStringCache = null;    super.append(str);    return this;&#125;\n方法与StringBuffer类似，只是在方法前加锁\n对下面代码进行编译，生成的 class 文件使用命令 javap -c Main.class，可以反编译得到图片中的字节码。\n可以看到 += 实际调用的是 StringBuilder.append() 方法，所以速度会比 StringBuilder 慢。\n图片来源2020年7月19日16点42分，深圳博物馆改革开放相关历史。\n","dateCreated":"2022-05-18T21:45:00+08:00","dateModified":"2022-07-03T16:36:45+08:00","datePublished":"2022-05-18T21:45:00+08:00","description":"一日在修改Trace的tag，被告知有耗时问题，对应源码有类似实现，从而引发的思考。","headline":"Trace耗时修改的思考","image":["https://picccc.oss-cn-shenzhen.aliyuncs.com/img/深圳历史.jpg?x-oss-process=image/resize,l_140,w_140","https://picccc.oss-cn-shenzhen.aliyuncs.com/img/古堡.jpg"],"mainEntityOfPage":{"@type":"WebPage","@id":"/2022/05/18/trace耗时修改的思考/"},"publisher":{"@type":"Organization","name":"BillReus","sameAs":["https://github.com/billreus","/#search","/#about"],"image":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90","logo":{"@type":"ImageObject","url":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90"}},"url":"/2022/05/18/trace耗时修改的思考/","keywords":"Android","thumbnailUrl":"https://picccc.oss-cn-shenzhen.aliyuncs.com/img/深圳历史.jpg?x-oss-process=image/resize,l_140,w_140"}</script>
+    <meta name="description" content="一日在修改Trace的tag，被告知有耗时问题，对应源码有类似实现，从而引发的思考。">
+<meta name="keywords" content="trace,耗时,Android">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="Trace耗时修改的思考">
+<meta property="og:url" content="/2022/05/18/trace耗时修改的思考/index.html">
+<meta property="og:site_name" content="莱茵河畔的固执">
+<meta property="og:description" content="一日在修改Trace的tag，被告知有耗时问题，对应源码有类似实现，从而引发的思考。">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:updated_time" content="2022-07-03T08:36:45.444Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Trace耗时修改的思考">
+<meta name="twitter:description" content="一日在修改Trace的tag，被告知有耗时问题，对应源码有类似实现，从而引发的思考。">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90"/>
+    
+    
+        <meta property="og:image" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/深圳历史.jpg?x-oss-process=image/resize,l_140,w_140"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/深圳历史.jpg?x-oss-process=image/resize,l_140,w_140"/>
+    
+    
+        <meta property="og:image" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/古堡.jpg"/>
+        <meta class="swiftype" name="image" data-type="enum" content="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/古堡.jpg"/>
+    
+    
+    <!--STYLES-->
+    <link rel="stylesheet" href="/assets/css/style-inw8pl0vcsjxbkjilkyx1wcvyzpyb5lstkp9pk3qndyvskleosndshovid8c.min.css">
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a class="header-title-link" href="/ " aria-label>
+            莱茵河畔的固执
+        </a>
+    </div>
+    
+        
+            <a class="header-right-picture " href="#about" aria-label="打开链接: /#about">
+        
+        
+            <img class="header-picture" src="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90" alt="作者的图片">
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a href="/#about" aria-label="阅读有关作者的更多信息">
+                    <img class="sidebar-profile-picture" src="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90" alt="作者的图片">
+                </a>
+                <h4 class="sidebar-profile-name">BillReus</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>author.bio</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/ " title="首页">
+                    
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首页</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-categories" title="分类">
+                    
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分类</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-tags" title="标签">
+                    
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">标签</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="/all-archives" title="归档">
+                    
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">归档</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="https://github.com/billreus" title="GitHub">
+                    
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link open-algolia-search" href="#search" title="搜索">
+                    
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜索</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a class="sidebar-button-link " href="#about" title="关于">
+                    
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+        <div class="post-header-cover
+                    text-left
+                    " style="background-image:url('https://picccc.oss-cn-shenzhen.aliyuncs.com/img/古堡.jpg');" data-behavior="4">
+            
+                <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            Trace耗时修改的思考
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2022-05-18T21:45:00+08:00">
+	
+		    5月 18, 2022
+    	
+    </time>
+    
+        <span>发布在 </span>
+        
+    <a class="category-link" href="/categories/Android/">Android</a>
+
+
+    
+</div>
+
+    
+</div>
+
+            
+        </div>
+
+            <div id="main" data-behavior="4"
+                 class="hasCover
+                        hasCoverMetaIn
+                        hasCoverCaption">
+                
+<article class="post">
+    
+        <span class="post-header-cover-caption caption">格吕克斯堡城堡</span>
+    
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>一日在修改Trace的tag，被告知有耗时问题，对应源码有类似实现，从而引发的思考。</p>
+<a id="more"></a>
+<h1 id="table-of-contents">目录</h1><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#OomAdjuster"><span class="toc-text">OomAdjuster</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Trace"><span class="toc-text">Trace</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#字符拼接"><span class="toc-text">字符拼接</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#图片来源"><span class="toc-text">图片来源</span></a></li></ol>
+<h1 id="OomAdjuster"><a href="#OomAdjuster" class="headerlink" title="OomAdjuster"></a>OomAdjuster</h1><p>在OomAdjuster函数中有这样一段代码（其中不涉及代码已省略）：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">OomAdjuster(ActivityManagerService service, ProcessList processList, ActiveUids activeUids,</span><br><span class="line">        ServiceThread adjusterThread) &#123;</span><br><span class="line">    </span><br><span class="line">    ....</span><br><span class="line"></span><br><span class="line">    mProcessGroupHandler = <span class="keyword">new</span> Handler(adjusterThread.getLooper(), msg -&gt; &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> pid = msg.arg1;</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> group = msg.arg2;</span><br><span class="line">        <span class="keyword">if</span> (pid == ActivityManagerService.MY_PID) &#123;</span><br><span class="line">            <span class="comment">// Skip setting the process group for system_server, keep it as default.</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (Trace.isTagEnabled(Trace.TRACE_TAG_ACTIVITY_MANAGER)) &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, <span class="string">"setProcessGroup "</span></span><br><span class="line">                    + msg.obj + <span class="string">" to "</span> + group);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            setProcessGroup(pid, group);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">if</span> (DEBUG_ALL) &#123;</span><br><span class="line">                Slog.w(TAG, <span class="string">"Failed setting process group of "</span> + pid + <span class="string">" to "</span> + group, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    ....  </span><br><span class="line">        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>该方法主要是在oomadj中计算好该进程的CPU分组后会发送消息给该handler进行CPU分组的操作，其中会打上trace方便分析耗时问题。</p>
+<p>这里提出两个问题：</p>
+<pre><code>1. traceEnd在finally中，而traceBegin在if判断中，这种方式合适吗？
+2. traceBegin的方法中也会调用isTagEnabled为什么还要判断一次，是否多余？
+</code></pre><h2 id="Trace"><a href="#Trace" class="headerlink" title="Trace"></a>Trace</h2><p>针对第一个问题，由于trace是根据tag来start和end，而系统一共就几种tag，所以为了保证start和end对称，最好是统一条件。</p>
+<ul>
+<li>我们在trace中偶尔会看到一些did not finish的trace就是因为异常导致start和end未对称</li>
+</ul>
+<p>针对第二个问题，首先笼统的回答一下原因，那就是避免不必要的字符拼接，因为即使有isTagEnabled在false情况下还是会拼接后面的字符，而简单的拼接字符是一件耗时的操作，为了避免性能的损失最好把有字符串拼接且会频繁调用的trace添加上判断条件。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> enable = Trace.isTagEnabled(Trace.TRACE_TAG_ACTIVITY_MANAGER);</span><br><span class="line"><span class="keyword">if</span> (enable) &#123;</span><br><span class="line">	Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, <span class="string">"setProcessGroup "</span> + msg.obj + <span class="string">" to "</span> + group);</span><br><span class="line">&#125;</span><br><span class="line">    ....</span><br><span class="line"><span class="keyword">if</span> (enable) &#123;</span><br><span class="line">	Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="字符拼接"><a href="#字符拼接" class="headerlink" title="字符拼接"></a>字符拼接</h1><p>好了，我们知道如此操作的原因是字符拼接耗时，那么Java中字符拼接有几种？有多耗时呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 方式1</span></span><br><span class="line">String s = <span class="string">"Hello"</span>;</span><br><span class="line">s += <span class="string">"Hello"</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 方式2</span></span><br><span class="line">StringBuilder stringBuilder = <span class="keyword">new</span> StringBuilder(<span class="string">"Hello"</span>);</span><br><span class="line">stringBuilder.append(<span class="string">"Hello"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 方式3</span></span><br><span class="line">StringBuffer stringBuffer = <span class="keyword">new</span> StringBuffer(<span class="string">"Hello"</span>);</span><br><span class="line">stringBuffer.append(<span class="string">"Hello"</span>);</span><br></pre></td></tr></table></figure>
+<p>常用的拼接字符的方式有三种，在pc段运行的话会发现，如果不停的循环new再赋值这种情况下耗死彬没有太大差异，更多的差异是在拼接长字符的情况下。<br>而在Android端由于和pc端由于性能和调用时的逻辑差异，所以避免拼接字符耗时，下面仅讨论拼接字符原理和耗时原因。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StringTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> begin1 = System.currentTimeMillis();</span><br><span class="line">        String s = <span class="string">"test"</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">            s += <span class="string">" build"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end1 = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"耗时测试1："</span> + (end1-begin1));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> begin2 = System.currentTimeMillis();</span><br><span class="line">        StringBuilder stringBuilder = <span class="keyword">new</span> StringBuilder(<span class="string">"test"</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">            stringBuilder.append(<span class="string">" build"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end2 = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"耗时测试2："</span> + (end2-begin2));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> begin3 = System.currentTimeMillis();</span><br><span class="line">        StringBuffer stringBuffer = <span class="keyword">new</span> StringBuffer(<span class="string">"test"</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">            stringBuffer.append(<span class="string">" build"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> end3 = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">"耗时测试3："</span> + (end3-begin3));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 耗时测试1：619</span></span><br><span class="line"><span class="comment">// 耗时测试2：0</span></span><br><span class="line"><span class="comment">// 耗时测试3：1</span></span><br></pre></td></tr></table></figure>
+<p>StringBuilder.append()拼接<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// StringBuilder.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">StringBuilder</span></span></span><br><span class="line"><span class="class">    <span class="keyword">extends</span> <span class="title">AbstractStringBuilder</span></span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">java</span>.<span class="title">io</span>.<span class="title">Serializable</span>, <span class="title">CharSequence</span></span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class">    @<span class="title">Override</span></span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">StringBuilder</span> <span class="title">append</span>(<span class="title">String</span> <span class="title">str</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.append(str);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line"><span class="comment">//AbstractStringBuilder.java</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> AbstractStringBuilder <span class="title">append</span><span class="params">(String str)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (str == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">return</span> appendNull();</span><br><span class="line">        <span class="keyword">int</span> len = str.length();</span><br><span class="line">        ensureCapacityInternal(count + len);</span><br><span class="line">        str.getChars(<span class="number">0</span>, len, value, count);</span><br><span class="line">        count += len;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line"><span class="comment">// String.java</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getChars</span><span class="params">(<span class="keyword">int</span> srcBegin, <span class="keyword">int</span> srcEnd, <span class="keyword">char</span> dst[], <span class="keyword">int</span> dstBegin)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (srcBegin &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> StringIndexOutOfBoundsException(srcBegin);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (srcEnd &gt; value.length) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> StringIndexOutOfBoundsException(srcEnd);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (srcBegin &gt; srcEnd) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> StringIndexOutOfBoundsException(srcEnd - srcBegin);</span><br><span class="line">        &#125;</span><br><span class="line">        System.arraycopy(value, srcBegin, dst, dstBegin, srcEnd - srcBegin);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>StringBuilder.append()拼接<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">StringBuffer</span></span></span><br><span class="line"><span class="class">    <span class="keyword">extends</span> <span class="title">AbstractStringBuilder</span></span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">java</span>.<span class="title">io</span>.<span class="title">Serializable</span>, <span class="title">CharSequence</span></span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class">@<span class="title">Override</span></span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">synchronized</span> <span class="title">StringBuffer</span> <span class="title">append</span>(<span class="title">String</span> <span class="title">str</span>) </span>&#123;</span><br><span class="line">    toStringCache = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">super</span>.append(str);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>方法与StringBuffer类似，只是在方法前加锁</p>
+<p>对下面代码进行编译，生成的 class 文件使用命令 javap -c Main.class，可以反编译得到图片中的字节码。</p>
+<p>可以看到 += 实际调用的是 StringBuilder.append() 方法，所以速度会比 StringBuilder 慢。</p>
+<h1 id="图片来源"><a href="#图片来源" class="headerlink" title="图片来源"></a>图片来源</h1><p>2020年7月19日16点42分，深圳博物馆改革开放相关历史。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">标签</span><br>
+                
+    <a class="tag tag--primary tag--small t-link" href="/tags/Android/">Android</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2022/07/02/生活·工作·未来/" data-tooltip="生活·工作·未来" aria-label="上一篇: 生活·工作·未来">
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2022/02/05/2022新年/" data-tooltip="2022新年有感" aria-label="下一篇: 2022新年有感">
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2022 BillReus. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2022/07/02/生活·工作·未来/" data-tooltip="生活·工作·未来" aria-label="上一篇: 生活·工作·未来">
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a class="post-action-btn btn btn--default tooltip--top" href="/2022/02/05/2022新年/" data-tooltip="2022新年有感" aria-label="下一篇: 2022新年有感">
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions" aria-label="Diesen Beitrag teilen">
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="https://picccc.oss-cn-shenzhen.aliyuncs.com/img/泰迪.jpg?x-oss-process=image/resize,l_90,w_90" alt="作者的图片">
+        
+            <h4 id="about-card-name">BillReus</h4>
+        
+            <div id="about-card-bio"><p>author.bio</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br>
+                <p>author.job</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br>
+                China
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('https://picccc.oss-cn-shenzhen.aliyuncs.com/img/背景.jpg?x-oss-process=image/resize,l_730,w_500');"></div>
+        <!--SCRIPTS-->
+<script src="/assets/js/script-iupfu4cvozqvsi1hhazhbob6uip1kfivmhmcidsf0ja5ike2vagngtevm6j3.min.js"></script>
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
